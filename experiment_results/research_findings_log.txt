@@ -1407,3 +1407,29 @@ from this data. Just needs more time.
 For the paper: this is an honest negative result that shows
 "LoRA fine-tune with 50 steps is insufficient for HLS pragma learning"
 and motivates future work with longer training.
+
+=== Finding #52: Spec-Driven Testbench Generation Failed ===
+Date: 2026-04-06
+
+Experiment: Give LLM the SPECIFICATION (expected behavior) instead of CODE,
+then generate testbench from spec. This should catch bugs because expected
+values come from spec not from buggy code.
+
+Results: 0/3 compiled. 
+  counter: syntax error at line 39
+  adder: no code block extracted  
+  shift_reg: no code block extracted
+
+Comparison:
+  Code-driven (Finding #46): 3/3 compiled, 0/2 bugs caught
+  Spec-driven (this):        0/3 compiled
+
+The model is WORSE at spec-driven generation because:
+1. Spec is more abstract than code → harder to generate concrete test values
+2. Verilog testbench syntax is less common in training data than C
+3. Small models can't bridge the gap between natural language spec and HDL
+
+Implication: LLM Verilog capability << LLM C capability.
+For Carbon-Verify, consider Cocotb (Python) over pure Verilog testbenches.
+
+500-step fine-tune still running in background on GPU.

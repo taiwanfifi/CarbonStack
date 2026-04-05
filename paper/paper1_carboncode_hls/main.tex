@@ -361,9 +361,24 @@ We present CarbonCode, a framework for HLS pragma optimization using local small
 language models. Our key findings are: (1) a 4.5B MoE model achieves 83.4\%
 pragma parameter accuracy, (2) retrieval-augmented generation hurts small model
 performance (Context Distraction Effect), and (3) post-process merge guarantees
-100\% code safety. Validated by Vitis HLS synthesis on 16+ kernels with up to
-63.3$\times$ speedup, CarbonCode demonstrates that effective HLS optimization
-is achievable with fully local, air-gap compatible models.
+100\% code safety. Validated by Vitis HLS synthesis on 18 kernels---including
+5G NR FIR and LDPC decoders---with up to 63.3$\times$ speedup, CarbonCode
+demonstrates that effective HLS optimization is achievable with fully local,
+air-gap compatible models.
+
+\subsection{Future Work}
+
+Three directions emerge from our findings. First, \textbf{domain-specific
+fine-tuning}: our initial LoRA experiments on ForgeHLS data show loss
+reduction but insufficient training steps; longer training with the full
+184K dataset could bake pragma knowledge into model weights rather than
+relying on prompt context. Second, \textbf{synthesis-in-the-loop}: while
+our iterative refinement experiments show that R0 (first prediction) is
+the ceiling for current models, combining fine-tuned models with
+synthesis feedback may break this barrier. Third, \textbf{code-level
+transformation}: moving beyond pragma-only optimization to loop tiling,
+double buffering, and algorithmic restructuring would address the
+remaining performance gap with expert-crafted designs.
 
 % ============================================================
 \bibliographystyle{IEEEtran}
