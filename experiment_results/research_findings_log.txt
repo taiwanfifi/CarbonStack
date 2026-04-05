@@ -1355,3 +1355,28 @@ However: need more kernels and rounds to be statistically significant.
 The improvement could be stochastic.
 
 ActiveAgent prototype: core/active_agent.py (MemoryPyramid + SurpriseGate + ActiveAgent classes)
+
+=== Finding #50: ActiveAgent A/B Test — Memory Does NOT Help ===
+Date: 2026-04-06
+
+Strict A/B test: 5 kernels × 3 seeds, same prompt ± memory context
+
+Results:
+  Baseline (no memory): mean PFS=0.889 (std=0.097, n=14 valid)
+  With memory context:  mean PFS=0.933 (std=0.070, n=9 valid)
+  
+  Paired t-test: t=1.25, NOT SIGNIFICANT (need t>2.0)
+  
+  WORSE: memory version failed 6/15 times (PFS=0.000) vs baseline 1/15
+  Memory context INCREASES failure rate (code block extraction fails)
+
+This is consistent with Context Distraction (Paper 2):
+Adding memory context = adding more context = hurting small models.
+
+Implication for ActiveAgent:
+- Current rule-based memory (hardcoded text) HURTS more than helps
+- Need different approach: fine-tuning (bake knowledge into weights)
+  not prompt injection (add knowledge to context)
+- Gemini recommends: LoRA fine-tune on ForgeHLS 184K data
+
+Next step: LoRA fine-tune experiment (10K samples, 1 hour test run)
