@@ -1380,3 +1380,30 @@ Implication for ActiveAgent:
 - Gemini recommends: LoRA fine-tune on ForgeHLS 184K data
 
 Next step: LoRA fine-tune experiment (10K samples, 1 hour test run)
+
+=== Finding #51: LoRA Fine-tune — First Attempt (Insufficient) ===
+Date: 2026-04-06
+
+Model: gemma-2-2b-it (LoRA r=16, 4-bit quantized)
+Data: 3409 ForgeHLS Pareto samples
+Training: 50 steps (400 samples), 115 seconds
+Loss: 18.94 → 13.77 (27% decrease)
+
+Evaluation:
+  FIR: PFS=0.000 (only generated PIPELINE OFF — WORSE than base)
+  DCT: FAILED (output garbled)
+
+ROOT CAUSE: 50 steps is far too few. The model barely started learning.
+Also gemma-2-2b is much smaller than gemma4 (2B vs 4.5B active).
+
+Next steps:
+1. Train 500+ steps (need ~1 hour)
+2. Or use full gemma4 as base (need adapter for MoE architecture)
+3. Or accept that fine-tune is a multi-day project, not a quick experiment
+
+The promising sign: loss DID decrease 27%, meaning the model CAN learn
+from this data. Just needs more time.
+
+For the paper: this is an honest negative result that shows
+"LoRA fine-tune with 50 steps is insufficient for HLS pragma learning"
+and motivates future work with longer training.
