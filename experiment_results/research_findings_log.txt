@@ -1333,3 +1333,25 @@ The non-monotonic shape suggests:
 - At 5 examples: model gives up on examples and falls back to reasoning
 
 File: check/context_multi_1775403364.json
+
+=== Finding #49: Carbon-ActiveAgent Prototype Working ===
+Date: 2026-04-06
+
+Carbon-ActiveAgent with Memory Pyramid + Surprise Gate tested on GPU.
+
+Round 1 (no memory):
+  fir: PFS=0.667, dct: PFS=0.733, dotprod: PFS=0.800
+  No rules learned (surprise below threshold)
+
+Round 2 (with L1 memory from round 1):
+  fir: PFS=0.667 → learned "avoid current pattern"
+  dotprod: PFS=0.867 (+8.4% vs round 1!) → learned "pragmas work well for this type"
+  2 L2 rules generated
+
+Key observation: DotProd improved from 0.800→0.867 when memory context
+was present. This is the FIRST evidence that memory pyramid helps.
+
+However: need more kernels and rounds to be statistically significant.
+The improvement could be stochastic.
+
+ActiveAgent prototype: core/active_agent.py (MemoryPyramid + SurpriseGate + ActiveAgent classes)
