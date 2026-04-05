@@ -187,47 +187,145 @@ All models run locally via Ollama on NVIDIA RTX 4090 (24GB VRAM).
 % ============================================================
 \section{Results}
 
-% TODO: Add tables and figures from experiment_results/
-% Table 1: ForgeHLS 30-kernel results (type match + PFS)
-% Table 2: Vitis synthesis results (16 kernels, latency + LUT + DSP)
-% Table 3: Model comparison (Gemma4 vs Qwen vs DeepSeek)
-% Table 4: Ablation study
-% Figure 1: PFS distribution across seeds
-% Figure 2: Speedup bar chart (16 kernels)
-% Figure 3: Context Distraction Effect (RAG vs zero-shot)
+\input{tables}
 
 \subsection{HLS Pragma Prediction Accuracy}
-% Phase A: 30 kernels, type match 98.9%, PFS from stats
-% Phase B: prompt A/B test results
+
+We evaluate pragma prediction on 30 ForgeHLS kernels spanning DSP, linear
+algebra, image processing, cryptography, and stencil computation domains.
+
+On pragma \emph{type} identification (should PIPELINE/UNROLL/PARTITION be used?),
+CarbonCode achieves 98.9\% accuracy with PIPELINE identification at 100\%
+(30/30 kernels). This demonstrates that the model reliably understands
+\emph{which} optimization directives are appropriate.
+
+For \emph{parameter} accuracy measured by PFS (Table~\ref{tab:stats}),
+Gemma4 achieves a mean PFS of 0.834 ($\pm$0.093) across 5 independent seeds.
+DCT is the most stable kernel (PFS=0.987, $\sigma$=0.027), while stencil2d
+shows highest variance ($\sigma$=0.154), likely due to its more complex
+multi-dimensional access patterns.
 
 \subsection{Vitis HLS Synthesis Validation}
-% 16 kernels, baseline vs optimized, speedup table
+
+Table~\ref{tab:vitis} presents synthesis results for 13 kernels on Vitis HLS
+v2025.2 targeting Virtex UltraScale+. LLM-suggested pragmas achieve a median
+3.2$\times$ and mean 13.0$\times$ speedup, with DCT reaching 53.7$\times$ and
+Bubble Sort 63.3$\times$.
+
+Two regressions occur: Histogram (0.25$\times$, due to \texttt{ARRAY\_PARTITION
+complete} on a 256-element array causing resource explosion) and Viterbi
+(0.1$\times$, where the baseline was already auto-pipelined by Vitis).
+These regressions reveal an important limitation: the model does not yet
+recognize when the compiler's default optimization is already near-optimal.
+
+We also validate on telecom-specific kernels: a 5G NR FIR filter
+(1,036 cycles, 16 DSP, 386 MHz) and an LDPC Min-Sum decoder
+(7 cycles baseline, successfully synthesized).
 
 \subsection{Model Comparison}
-% Gemma4 vs Qwen vs DeepSeek, fair comparison
+
+Table~\ref{tab:models} compares three local models under identical prompts.
+Gemma4 (4.5B active parameters, MoE architecture) achieves PFS=0.883,
+outperforming the 7B dense Qwen model (0.633) by 40\%.
+Notably, Gemma4 uses \emph{fewer} active parameters than Qwen yet performs
+significantly better, suggesting that mixture-of-experts architectures
+are particularly suited for structured hardware optimization tasks where
+different pragma types (PIPELINE, PARTITION, UNROLL) may activate
+different expert pathways.
+
+DeepSeek-R1 (14B) achieves only 0.756 PFS with a 40\% failure rate,
+as its reasoning-oriented output format often fails to produce
+extractable code blocks.
 
 \subsection{Ablation Study}
-% Full vs no-PIPELINE vs no-PARTITION
+
+Table~\ref{tab:ablation} shows the impact of removing pragma types from
+the prompt. Removing PIPELINE causes a 43\% PFS drop; removing PARTITION
+causes 39\%. Both are essential---neither can substitute for the other.
+This validates our post-process merge approach: the model must generate
+\emph{all} pragma types simultaneously, then we selectively merge them back.
 
 \subsection{Context Distraction Effect}
-% RAG (73%) vs zero-shot (90%)
+
+Table~\ref{tab:distraction} reveals a counter-intuitive finding: providing
+retrieval-augmented examples (A4: Few-shot RAG) \emph{degrades} performance
+from 90.0\% to 73.4\% type match compared to zero-shot (A1).
+
+We hypothesize this occurs because small models ($<$10B parameters) have
+limited attention capacity. When examples are added to the context, the
+model attends to surface-level patterns in the examples rather than
+reasoning about the target kernel's structure. The examples become
+\emph{noise} rather than guidance.
+
+This finding has practical implications: for small local models,
+simple focused prompts outperform sophisticated retrieval-augmented
+generation pipelines.
 
 % ============================================================
 \section{Discussion}
 
 \subsection{Why MoE Outperforms Dense Models}
-% Gemma4 4.5B > Qwen 7B — sparse expert routing for structured tasks
+
+The superior performance of Gemma4 (4.5B active, MoE) over Qwen (7B dense)
+is noteworthy given the parameter count difference. We hypothesize that
+HLS pragma optimization naturally decomposes into sub-tasks---PIPELINE
+decisions involve loop dependency analysis, PARTITION decisions involve
+memory access pattern recognition, and UNROLL decisions involve
+parallelism estimation. MoE architectures route different sub-tasks to
+different expert modules, enabling specialization that dense models
+achieve less efficiently.
+
+\subsection{When NOT to Optimize}
+
+Two of our 17 kernels exhibited \emph{regression} after pragma application.
+The Viterbi decoder baseline (latency=18) was already auto-pipelined by
+Vitis HLS to near-optimal II=1. Adding manual pragmas introduced routing
+overhead, increasing latency to 131 ($0.14\times$). This reveals a
+critical capability gap: the model must learn to recognize when the
+compiler's default is already sufficient---a ``do nothing'' recommendation
+is sometimes optimal.
+
+\subsection{Comparison with Traditional DSE}
+
+AutoDSE~\cite{autodse} achieves high-quality solutions through
+bottleneck-guided coordinate optimization, typically requiring 100--500
+Vitis HLS synthesis iterations (8--24 hours total). CarbonCode operates
+in a fundamentally different regime:
+
+\begin{itemize}
+    \item \textbf{Speed}: 1 LLM inference (3--10 sec) + 1 synthesis
+    verification (30 sec) = under 1 minute total.
+    \item \textbf{Quality}: Median 3.2$\times$ speedup vs. AutoDSE's
+    near-Pareto solutions.
+    \item \textbf{Knowledge transfer}: Lessons from FIR optimization
+    (e.g., ``coefficients accessed in parallel need complete partition'')
+    are implicitly encoded in the model and transfer to similar kernels.
+    AutoDSE restarts from scratch for each new kernel.
+\end{itemize}
+
+CarbonCode is not a replacement for exhaustive DSE but rather a
+\emph{warm starter}: its predictions provide a strong initial point
+that reduces subsequent DSE search time.
 
 \subsection{Limitations}
-% 1. Parameter accuracy 83.4% (not 100%)
-% 2. Only pragma optimization, no code transformation
-% 3. 5-kernel statistical validation (need more)
-% 4. No real hardware deployment test
 
-\subsection{Comparison with AutoDSE}
-% AutoDSE: 100-500 synthesis iterations, 8-24 hours
-% CarbonCode: 1 LLM inference (3-10 sec) + 1 synthesis (30 sec)
-% Trade-off: AutoDSE finds optimal, we find near-optimal much faster
+\begin{enumerate}
+    \item \textbf{Parameter accuracy}: PFS of 0.834 means the model
+    typically selects the right pragma type but may choose suboptimal
+    parameters (e.g., UNROLL factor=8 when optimal is 16).
+
+    \item \textbf{Pragma-only}: We optimize pragma directives without
+    modifying code structure. Transformations like loop tiling or
+    double buffering, which can yield additional speedups, are not
+    addressed.
+
+    \item \textbf{Regression detection}: The model cannot reliably
+    identify when optimization will hurt (2/17 regressions).
+
+    \item \textbf{Scale}: Statistical validation uses 5 kernels
+    $\times$ 5 seeds. Industrial deployment would require validation
+    on hundreds of kernels.
+\end{enumerate}
 
 % ============================================================
 \section{Conclusion}
