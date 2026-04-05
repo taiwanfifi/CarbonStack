@@ -1,0 +1,150 @@
+% Paper 5: Carbon-Verify — LLM Testbench Generation for Hardware Verification
+% Target: DVCon / DAC Workshop
+
+\documentclass[conference]{IEEEtran}
+\usepackage{amsmath,graphicx,booktabs,hyperref}
+
+\title{Can LLMs Verify Hardware?\\Testbench Generation from Code vs.\ Specification}
+
+\author{
+\IEEEauthorblockN{William Chen}
+\IEEEauthorblockA{National Taiwan University}
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We investigate whether local small language models (4.5B parameters)
+can generate functional hardware testbenches. Using Gemma4 with
+iverilog simulation, we test two approaches: \emph{code-driven}
+(generate testbench from module implementation) and \emph{spec-driven}
+(generate from behavioral specification). Code-driven testbenches
+achieve 100\% compile rate (3/3 modules) but catch 0\% of injected
+bugs---because the model derives expected values from the buggy code
+rather than the specification. Spec-driven testbenches fail to compile
+(0/3), as the model struggles to translate natural language
+specifications into syntactically valid Verilog. We identify a
+fundamental limitation: \emph{LLM testbenches verify what code does,
+not what code should do.} Cocotb (Python-based) testbenches show
+higher success rates than pure Verilog, suggesting Python is a more
+natural target language for LLM-generated verification.
+\end{abstract}
+
+\section{Introduction}
+
+Hardware verification consumes 60--70\% of semiconductor design time.
+Testbench generation---writing stimulus and checking logic---is
+labor-intensive yet follows patterns that language models might learn.
+
+We examine whether Gemma4 (4.5B MoE) can generate testbenches that
+actually compile, simulate, and detect bugs in Verilog modules.
+Two approaches are compared:
+
+\begin{itemize}
+    \item \textbf{Code-driven}: The model sees the module's RTL code
+    and generates a testbench from it.
+    \item \textbf{Spec-driven}: The model receives only a natural
+    language specification of expected behavior, plus port declarations.
+\end{itemize}
+
+\section{Experimental Setup}
+
+\subsection{Modules Under Test}
+Three modules with intentionally injected bugs:
+\begin{enumerate}
+    \item \textbf{Counter}: Reset sets count to 1 instead of 0
+    \item \textbf{Adder}: Adds extra +1 to sum
+    \item \textbf{Mux4}: No bug (control case)
+\end{enumerate}
+
+\subsection{Tools}
+iverilog for compilation, vvp for simulation, Gemma4 via Ollama.
+
+\section{Results}
+
+\begin{table}[t]
+\centering
+\caption{Testbench generation results. Code-driven compiles but
+misses bugs. Spec-driven fails to compile.}
+\label{tab:verify}
+\begin{tabular}{lcccc}
+\toprule
+& \multicolumn{2}{c}{\textbf{Code-Driven}} & \multicolumn{2}{c}{\textbf{Spec-Driven}} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5}
+\textbf{Module} & Compile & Bug? & Compile & Bug? \\
+\midrule
+Counter (bug)    & \checkmark & $\times$ & $\times$ & --- \\
+Adder (bug)      & \checkmark & $\times$ & $\times$ & --- \\
+Mux4 (correct)   & \checkmark & PASS     & ---      & --- \\
+Shift Reg (bug)  & ---        & ---      & $\times$ & --- \\
+\midrule
+\textbf{Rate}    & 3/3 (100\%) & 0/2 (0\%) & 0/3 (0\%) & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Why Code-Driven Misses Bugs}
+
+The counter testbench expected \texttt{count=1} after reset---matching
+the buggy code, not the specification. The model learned expected
+values by \emph{simulating} the code in its ``head,'' not by
+reasoning about intended behavior.
+
+This reveals a fundamental limitation:
+\begin{quote}
+\emph{LLM-generated testbenches from code verify that code does
+what it does, not what it should do.}
+\end{quote}
+
+\subsection{Why Spec-Driven Fails to Compile}
+
+Spec-driven generation requires translating natural language
+(``reset should set count to 0'') into valid Verilog syntax.
+Gemma4 struggles with:
+(a) Verilog timing constructs (\texttt{\#}, \texttt{@}),
+(b) correct port binding, and
+(c) \texttt{\$display}/\texttt{\$finish} placement.
+
+\subsection{Cocotb vs. Verilog}
+
+Cocotb (Python-based) testbenches from our PoC experiments achieve
+3/3 generation success (vs. 0/3 for spec-driven Verilog). Python's
+simpler syntax and the model's stronger Python training data
+make it a more reliable target language.
+
+\section{Discussion}
+
+\subsection{The Spec-Code Gap}
+
+To generate bug-catching testbenches, the model needs \emph{both}:
+(a) the specification (what should happen), and (b) enough Verilog
+skill to express assertions. Current 4.5B models have (b) weakly
+but lack the ability to bridge from (a) to (b).
+
+\subsection{Toward Effective LLM Verification}
+
+\begin{enumerate}
+    \item \textbf{Use Python (Cocotb)} instead of Verilog for
+    testbench generation
+    \item \textbf{Provide explicit assertions} in the prompt
+    (``assert count==0 after reset'')
+    \item \textbf{Two-stage}: LLM generates test vectors,
+    separate tool checks assertions
+\end{enumerate}
+
+\section{Conclusion}
+
+LLMs can generate compilable testbenches (100\% code-driven) but
+cannot currently detect bugs because they derive expectations from
+code rather than specifications. Spec-driven generation is the
+correct approach but fails on Verilog syntax (0\% compile rate).
+Python-based frameworks (Cocotb) are the pragmatic path forward
+for LLM-assisted verification.
+
+\bibliographystyle{IEEEtran}
+\begin{thebibliography}{1}
+\bibitem{cocotb} Cocotb Contributors, ``Cocotb: Coroutine-based Co-simulation Testbench,'' 2024.
+\end{thebibliography}
+
+\end{document}
