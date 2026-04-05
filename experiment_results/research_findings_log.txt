@@ -1210,3 +1210,29 @@ This connects CarbonStack to professor's telecom expertise.
 
 LDPC opt failure teaches: complete partition on cn_to_vn[8][6] 2D array
 is too aggressive. Need cyclic or partial partition for irregular access patterns.
+
+=== Finding #44: Closed-Loop Iterative Refinement (GPU→AWS) ===
+Date: 2026-04-05
+Setup: Gemma4 on Vast.ai RTX 6000 → SSH → AWS Vitis HLS
+
+Results (3 kernels × 5 rounds):
+  FIR:     R0=18, R1=64, R2=2050, R3=18, R4=2050  (best=18, 114x)
+  DCT:     R0=34, R1=514, R2=258, R3=258, R4=514   (best=34, 15.8x)
+  DotProd: R0=257, R1=257, R2=FAIL, R3=258, R4=257  (best=257, 2.0x)
+
+KEY FINDING: R0 (first LLM suggestion) is always the best.
+Iterative refinement with Vitis feedback does NOT improve results.
+Later rounds oscillate or regress.
+
+Hypothesis: Small models (4.5B) express all their hardware optimization
+knowledge in a single inference. More rounds just add noise.
+
+This has implications for Paper 2:
+- Iterative refinement works for ERROR RECOVERY (R1 DSP explosion → R3 fixed)
+- But NOT for performance IMPROVEMENT beyond initial suggestion
+- Need larger models or Active Inference (memory pyramid) for true iteration
+
+Feedback format v2 (with resource budgets) successfully prevents permanent
+regression — the model can recover from bad rounds. But it can't go beyond R0.
+
+File: check/closedloop_1775378035.json
