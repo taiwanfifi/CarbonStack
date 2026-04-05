@@ -1,0 +1,1088 @@
+PIE Benchmark Detailed Log
+Method: cc | Model: qwen2.5-coder:7b | Seed: 42 | Tasks: 9
+Pass rate: 7/9
+================================================================================
+
+================================================================================
+Problem: p03161 | Success: True | Speedup: 1.2350466896609742
+TC Pass: N/A | Fail Reason: N/A
+
+--- SOURCE CODE ---
+#include <bits/stdc++.h>
+
+using namespace std;
+
+
+
+int main() {
+
+	int n,k;
+
+	cin>>n>>k;
+
+	vector<int>arr(n+1);
+
+	for(int i=1;i<=n;i++){
+
+		cin>>arr[i];
+
+	}
+
+	vector<int>dp(n+1,INT_MAX);
+
+	dp[1]=0;
+
+	for(int i=2;i<=n;i++){
+
+		for(int j=1;i-j>0&&j<=k;j++){
+
+			if(dp[i-j]!=INT_MAX)dp[i]=min(dp[i],dp[i-j]+abs(arr[i]-arr[i-j]));
+
+		}
+
+	}
+
+	cout<<dp[n]<<endl;
+
+	return 0;
+
+}
+
+--- OPTIMIZED CODE ---
+#include <climits>
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <random>
+#include <chrono>
+#include <cmath>
+#include <numeric>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <memory>
+#include <functional>
+#include <set>
+#include <map>
+#include <queue>
+#include <stack>
+#include <deque>
+#include <list>
+#include <bitset>
+#include <cassert>
+#include <cstring>
+#include <iomanip>
+#include <sstream>
+
+using namespace std;
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    int n, k;
+    cin >> n >> k;
+
+    int arr[n + 1];
+    for (int i = 1; i <= n; i++) {
+        cin >> arr[i];
+    }
+
+    int dp[n + 1];
+    fill(dp, dp + n + 1, INT_MAX);
+    dp[1] = 0;
+
+    for (int i = 2; i <= n; i++) {
+        for (int j = 1; i - j > 0 && j <= k; j++) {
+            if (dp[i - j] != INT_MAX) {
+                dp[i] = min(dp[i], dp[i - j] + abs(arr[i] - arr[i - j]));
+            }
+        }
+    }
+
+    cout << dp[n] << endl;
+
+    return 0;
+}
+
+--- FIRST STDIN ---
+3 1
+0 59 10
+
+
+================================================================================
+Problem: p03161 | Success: True | Speedup: 0.887543130765439
+TC Pass: N/A | Fail Reason: N/A
+
+--- SOURCE CODE ---
+#include<iostream>
+
+#include<cstdio>
+
+#include<cmath>
+
+#include<cstring>
+
+using namespace std;
+
+const int N=100005;
+
+int f[N],a[N];
+
+int main()
+
+{
+
+	int n,k;
+
+	scanf("%d%d",&n,&k);
+
+	memset(f,0x3f,sizeof(f));
+
+	for(int i=1;i<=n;i++) scanf("%d",&a[i]);
+
+	f[1]=0;
+
+	for(int i=2;i<=n;i++){
+
+		for(int j=1;j<=k;j++){
+
+			if(i-j>=1) f[i]=min(f[i],f[i-j]+abs(a[i]-a[i-j]));
+
+		}
+
+	}
+
+	printf("%d\n",f[n]);
+
+}
+
+--- OPTIMIZED CODE ---
+#include<iostream>
+#include<cstdio>
+#include<cmath>
+using namespace std;
+
+const int N=100005;
+int f[N],a[N];
+
+int main() {
+    ios_base::sync_with_stdio(false); cin.tie(NULL);
+    
+    int n,k;
+    scanf("%d%d",&n,&k);
+    for(int i=1;i<=n;i++) scanf("%d",&a[i]);
+    
+    f[1]=0;
+    for(int i=2;i<=n;i++){
+        f[i] = f[i-1] + abs(a[i]-a[i-1]);
+        for(int j=i-k;j<i;j++){
+            if(j>=1) f[i] = min(f[i], f[j] + abs(a[i]-a[j]));
+        }
+    }
+    
+    printf("%d\n",f[n]);
+}
+
+--- FIRST STDIN ---
+3 1
+0 59 10
+
+
+================================================================================
+Problem: p00431 | Success: False | Speedup: N/A
+TC Pass: N/A | Fail Reason: cc_no_output
+
+--- SOURCE CODE ---
+#include <vector>
+
+#include <iostream>
+
+#include <algorithm>
+
+ 
+
+using namespace std;
+
+
+
+int N, A, B, used[100], rings[100]; vector<int> G[100];
+
+ 
+
+int rec(int pos)
+
+{
+
+    used[pos] = true; int ret = 1;
+
+     
+
+    for(int i = 0; i < rings[pos]; i++)
+
+    {
+
+        if(!used[G[pos][i]])
+
+        {
+
+            ret = max(ret, rec(G[pos][i]) + 1);
+
+        }
+
+    }
+
+     
+
+    used[pos] = false;
+
+     
+
+    return ret;
+
+}
+
+ 
+
+int main()
+
+{
+
+    int N, A, B;
+
+     
+
+    while(true)
+
+    {
+
+        scanf("%d", &N);
+
+         
+
+        if(N == 0) { break; }
+
+ 
+
+        for(int i = 0; i < 100; i++)
+
+        {
+
+            used[i] = false;
+
+            rings[i] = 0;
+
+            G[i].clear();
+
+        }
+
+     
+
+        for(int i = 0; i < N; i++)
+
+        {
+
+            scanf("%d", &A); A--;
+
+            scanf("%d", &B); B--;
+
+         
+
+            G[A].push_back(B);
+
+            G[B].push_back(A);
+
+        }
+
+         
+
+        for(int i = 0; i < 100; i++)
+
+        {
+
+            rings[i] = G[i].size();
+
+        }
+
+         
+
+        int nodes = 0;
+
+         
+
+        for(int i = 0; i < 100; i++)
+
+        {
+
+            if(rings[i])
+
+            {
+
+                nodes++;
+
+            }
+
+        }
+
+     
+
+        int ret = 0;
+
+     
+
+        for(int i = 0; i < 100; i++)
+
+        {
+
+            ret = max(ret, rec(i));
+
+                 
+
+            if(ret == nodes) { break; }
+
+        }
+
+         
+
+        printf("%d\n", ret);
+
+    }
+
+     
+
+    return 0;
+
+}
+
+--- FIRST STDIN ---
+7
+2 3
+3 4
+1 4
+2 7
+5 9
+6 7
+1 7
+6
+1 3
+2 3
+3 4
+4 5
+1 5
+2 6
+7
+1 3
+2 4
+3 5
+4 6
+6 7
+2 3
+4 7
+0
+
+
+================================================================================
+Problem: p03161 | Success: True | Speedup: 0.9607535321821036
+TC Pass: N/A | Fail Reason: N/A
+
+--- SOURCE CODE ---
+#include <bits/stdc++.h>
+
+using namespace std;
+
+typedef long long ll;
+
+typedef long long int lli;
+
+typedef long double ld;
+
+const int oo = 1e9;
+
+const int mod = 1e9+9;
+
+/*ll gcd(ll x, ll y){return (y ? gcd(y, x%y) : x); }
+
+*ll lcm(ll x, ll y){return x*(y/gcd(x,y));}
+
+*void exEuclid(int a, int b){
+
+	if(b==0){x = 1; y=0; d=a; return ;}
+
+	exEuclid(b, a%b);
+
+	int x1=y;
+
+	int y1=x-(a/b)*y;
+
+	x=x1;
+
+	y=y1;
+
+} 
+
+* */
+
+//===========================================================//
+
+const int nax = 1e5+103;
+
+int n, k;
+
+int dp[nax];
+
+int a[nax];
+
+int f(int i){
+
+	if (i==n-1) return 0;
+
+	if(dp[i]!=-1) return dp[i];
+
+	int ans = abs(a[i]-a[i+1])+f(i+1);
+
+	for(int j=2; j<=k; j++){
+
+		if(i+j<n) ans = min(ans, abs(a[i]-a[i+j])+f(i+j));
+
+	}
+
+	return dp[i]=ans;
+
+}
+
+int main(){
+
+	cin>>n>>k;
+
+	for(int i=0; i<n; i++) cin>>a[i];
+
+	memset(dp, -1, sizeof dp);
+
+	cout<<f(0)<<endl;
+
+	return 0;
+
+}
+
+--- OPTIMIZED CODE ---
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <random>
+#include <chrono>
+#include <cmath>
+#include <numeric>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <memory>
+#include <functional>
+#include <set>
+#include <map>
+#include <queue>
+#include <stack>
+#include <deque>
+#include <list>
+#include <bitset>
+#include <cassert>
+#include <cstring>
+#include <climits>
+#include <iomanip>
+#include <sstream>
+
+using namespace std;
+
+typedef long long ll;
+
+const int nax = 1e5 + 103;
+int n, k;
+int dp[nax];
+int a[nax];
+
+int f(int i) {
+    if (i == n - 1) return 0;
+    if (dp[i] != -1) return dp[i];
+    int ans = abs(a[i] - a[i + 1]) + f(i + 1);
+    for (int j = 2; j <= k; j++) {
+        if (i + j < n) ans = min(ans, abs(a[i] - a[i + j]) + f(i + j));
+    }
+    return dp[i] = ans;
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    cin >> n >> k;
+    for (int i = 0; i < n; i++) cin >> a[i];
+    fill(dp, dp + n, -1);
+    cout << f(0) << endl;
+
+    return 0;
+}
+
+--- FIRST STDIN ---
+3 1
+0 59 10
+
+
+================================================================================
+Problem: p02630 | Success: True | Speedup: 1.2094855670884157
+TC Pass: N/A | Fail Reason: N/A
+
+--- SOURCE CODE ---
+#include <iostream>
+
+#include <stdio.h>
+
+#include<cmath>
+
+#include<cctype>
+
+#include<cstdio>
+
+#include <algorithm>
+
+#include <string.h>
+
+#include<math.h>
+
+#include<map>
+
+#include<bits/stdc++.h>
+
+#include<unordered_map>
+
+#define Maxn 100005
+
+#define ll long long
+
+using namespace std;
+
+
+
+ll sum;
+
+int num[Maxn];
+
+int a[Maxn];
+
+int main(){
+
+	int n,q,b,c;
+
+	scanf("%d",&n);
+
+	sum=0;
+
+	for(int i=1;i<=n;i++){
+
+        scanf("%d",&a[i]);
+
+        sum+=a[i];
+
+        num[a[i]]++;//a[i]出现的次数
+
+	}
+
+    scanf("%d",&q);
+
+	for(int i=1;i<=q;i++){
+
+        scanf("%d%d",&b,&c);
+
+        sum+=(c-b)*num[b];
+
+        num[c]+=num[b];
+
+        num[b]=0;
+
+        printf("%lld\n",sum);
+
+	}
+
+	return 0;
+
+}
+
+
+--- OPTIMIZED CODE ---
+#include <iostream>
+#include <cstdio>
+#include <algorithm>
+
+#define Maxn 100005
+#define ll long long
+
+using namespace std;
+
+ll sum;
+int num[Maxn];
+int a[Maxn];
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    int n, q, b, c;
+    scanf("%d", &n);
+    sum = 0;
+    for (int i = 1; i <= n; i++) {
+        scanf("%d", &a[i]);
+        sum += a[i];
+        num[a[i]]++; // a[i]出现的次数
+    }
+    scanf("%d", &q);
+    for (int i = 1; i <= q; i++) {
+        scanf("%d%d", &b, &c);
+        sum += (ll)(c - b) * num[b];
+        num[c] += num[b];
+        num[b] = 0;
+        printf("%lld\n", sum);
+    }
+    return 0;
+}
+
+--- FIRST STDIN ---
+4
+2 2 3 3
+1
+2 4
+3 4
+1 5
+
+
+================================================================================
+Problem: p03161 | Success: True | Speedup: 1.4928935736144169
+TC Pass: N/A | Fail Reason: N/A
+
+--- SOURCE CODE ---
+#include <bits/stdc++.h>
+
+using namespace std;
+
+#define IO ios::sync_with_stdio(false), cin.tie(0)
+
+typedef long long ll;
+
+const int maxn = 1e6 + 5;
+
+const int inf = 0x3f3f3f3f;
+
+ll a[maxn];
+
+ll dp[maxn];
+
+
+
+int main()
+
+{
+
+    IO;
+
+    int n, k;
+
+    cin >> n >> k;
+
+    for (int i = 1; i <= n; ++i)
+
+        cin >> a[i];
+
+    memset(dp, inf, sizeof(dp));
+
+    dp[1] = 0;
+
+    for (int i = 2; i <= n; ++i)
+
+    {
+
+        for (int j = 1; j <= k; ++j)
+
+        {
+
+            dp[i] = min(dp[i], dp[max(i - j, 1)] + abs(a[i] - a[max(i - j, 1)]));
+
+        }
+
+    }
+
+    cout << dp[n] << endl;
+
+}
+
+
+--- OPTIMIZED CODE ---
+#include <cstring>
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <random>
+#include <chrono>
+#include <cmath>
+#include <numeric>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <memory>
+#include <functional>
+#include <set>
+#include <map>
+#include <queue>
+#include <stack>
+#include <deque>
+#include <list>
+#include <bitset>
+#include <cassert>
+#include <climits>
+#include <iomanip>
+#include <sstream>
+
+using namespace std;
+
+#define IO ios::sync_with_stdio(false), cin.tie(0)
+
+typedef long long ll;
+
+const int maxn = 1e6 + 5;
+const int inf = 0x3f3f3f3f;
+
+int a[maxn];
+int dp[maxn];
+
+int main() {
+    IO;
+    int n, k;
+    cin >> n >> k;
+    for (int i = 1; i <= n; ++i)
+        cin >> a[i];
+    memset(dp, inf, sizeof(dp));
+    dp[1] = 0;
+    for (int i = 2; i <= n; ++i) {
+        int min_cost = inf;
+        for (int j = 1; j <= k && i - j >= 1; ++j)
+            min_cost = min(min_cost, dp[i - j] + abs(a[i] - a[i - j]));
+        dp[i] = min_cost;
+    }
+    cout << dp[n] << endl;
+}
+
+--- FIRST STDIN ---
+3 1
+0 59 10
+
+
+================================================================================
+Problem: p02946 | Success: True | Speedup: 1.1661046885035324
+TC Pass: N/A | Fail Reason: N/A
+
+--- SOURCE CODE ---
+#include <iostream>
+
+#include <algorithm>
+
+using namespace std;
+
+static const int LEFT = -1000000;
+
+static const int RIGHT = 1000000;
+
+int main() {
+
+    int K, X;
+
+    cin >> K >> X;
+
+    for (int i = max(LEFT, X - K + 1); i <= min(RIGHT, X + K - 1); i++)
+
+        cout << i << " ";
+
+}
+
+--- OPTIMIZED CODE ---
+#include <iostream>
+using namespace std;
+
+static const int LEFT = -1000000;
+static const int RIGHT = 1000000;
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    int K, X;
+    cin >> K >> X;
+
+    for (int i = max(LEFT, X - K + 1); i <= min(RIGHT, X + K - 1); ++i) {
+        cout << i << " ";
+    }
+    cout << endl; // Ensure the output ends with a newline
+
+    return 0;
+}
+
+--- FIRST STDIN ---
+11 10
+
+
+================================================================================
+Problem: p03161 | Success: True | Speedup: 1.0417296851368074
+TC Pass: N/A | Fail Reason: N/A
+
+--- SOURCE CODE ---
+#include <bits/stdc++.h>
+
+using namespace std;
+
+
+
+//  c0 c1 c2 c3 c4 c5 c6
+
+//  a0 a1 a2 a3 a4 a5 a6
+
+const int tam = 1e5+10;
+
+long long dp[tam];
+
+long long h[tam];
+
+int k;
+
+long long INF = 1e18;
+
+
+
+
+
+int solve( int i  ) {
+
+    if( i <= 1 ) return abs(h[0]-h[i]);
+
+    long long &ans = dp[i];
+
+    if( ans != -1 ) return ans;
+
+    ans = INF;
+
+    for( int j = 1; j <= k; j++ ) {
+
+        if( i-j >= 0 )
+
+            ans = min( ans, solve(i-j) + abs(h[i-j]-h[i]) );
+
+    }
+
+    return ans;
+
+}
+
+
+
+int main() {
+
+    ios_base::sync_with_stdio(false); cin.tie(NULL);
+
+    int n;
+
+    cin >> n >> k;
+
+    for( int i = 0; i < n; i++  ) {
+
+        cin >> h[i];
+
+    } 
+
+    // dp[0] = 0;
+
+    // for( int i = 1; i < n; i++ ) {
+
+    //     dp[i] = dp[i-1] + abs(h[i]-h[i-1]);
+
+    //     for( int j = 2; j <= k; j++)
+
+    //     if( j <= i ) {
+
+    //         dp[i] = min( dp[i], dp[i-j] + abs(h[i]-h[i-j]) );
+
+    //     }
+
+    // }
+
+    // cout << dp[n-1] << '\n';
+
+    memset( dp, -1, sizeof dp );
+
+    cout << solve(n-1) << '\n';
+
+    return 0;
+
+}
+
+--- OPTIMIZED CODE ---
+#include <cstring>
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <random>
+#include <chrono>
+#include <cmath>
+#include <numeric>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <memory>
+#include <functional>
+#include <set>
+#include <map>
+#include <queue>
+#include <stack>
+#include <deque>
+#include <list>
+#include <bitset>
+#include <cassert>
+#include <climits>
+#include <iomanip>
+#include <sstream>
+
+using namespace std;
+
+const int tam = 1e5 + 10;
+long long dp[tam];
+long long h[tam];
+int k;
+long long INF = 1e18;
+
+int solve(int i) {
+    if (i <= 1) return abs(h[0] - h[i]);
+    long long &ans = dp[i];
+    if (ans != -1) return ans;
+    ans = INF;
+    for (int j = 1; j <= k; j++) {
+        if (i - j >= 0)
+            ans = min(ans, solve(i - j) + abs(h[i - j] - h[i]));
+    }
+    return ans;
+}
+
+int main() {
+    ios_base::sync_with_stdio(false);
+    cin.tie(NULL);
+
+    int n;
+    cin >> n >> k;
+
+    for (int i = 0; i < n; i++) {
+        cin >> h[i];
+    }
+
+    memset(dp, -1, sizeof dp);
+    cout << solve(n - 1) << '\n';
+
+    return 0;
+}
+
+--- FIRST STDIN ---
+3 1
+0 59 10
+
+
+================================================================================
+Problem: p03161 | Success: False | Speedup: N/A
+TC Pass: N/A | Fail Reason: cc_no_output
+
+--- SOURCE CODE ---
+#define _CRT_SECURE_NO_WARNINGS
+
+#include <bits/stdc++.h>
+
+#include <unordered_map>
+
+#define stop(x) {cout<<x<<endl;exit(0);}
+
+#define all(x) x.begin(),x.end()
+
+#define szz(s) int(s.size())
+
+#define endl '\n'
+
+int dx[] = { 0, 0, 1, -1, 1, -1, 1, -1 };
+
+int dy[] = { 1, -1, 0, 0, -1, 1, 1, -1 };
+
+typedef long long ll;
+
+using namespace std;
+
+
+
+void file() {
+
+    ios::sync_with_stdio(0); cin.tie(0); cout.tie(0);
+
+#ifndef ONLINE_JUDGE
+
+    if (freopen("input.txt", "r", stdin));
+
+    if (freopen("output.txt", "w", stdout));
+
+#endif
+
+}
+
+
+
+
+
+
+
+int main() {
+
+    //file();
+
+
+
+    ll n, m;
+
+    cin >> n >> m;
+
+    vector < ll > v(n);
+
+
+
+    for (auto& e : v)cin >> e;
+
+
+
+    vector < ll > dp(n + 1, 1e11);
+
+
+
+    dp[0] = 0;
+
+
+
+    for (int i = 0; i < n; i++) {
+
+        for (int k = i + 1; k < min(i + m +1, n); k++) {
+
+            dp[k] = min(dp[k], dp[i] + abs(v[i] - v[k]));
+
+        }
+
+    }
+
+
+
+    cout << dp[n-1] << endl;
+
+
+
+        
+
+}
+
+--- FIRST STDIN ---
+3 1
+0 59 10
+
+

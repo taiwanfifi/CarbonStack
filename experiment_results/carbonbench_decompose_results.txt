@@ -1,0 +1,180 @@
+
+============================================================
+  CarbonBench: task_004_topk — Top-K Selection (full sort vs partial)
+============================================================
+  Naive: 0.3354s
+
+============================================================
+  CarbonCode DECOMPOSE | Optimize: Top-K Selection (full sort vs partial)
+============================================================
+
+  [Baseline] Benchmarking naive code...
+  Naive: 0.3353s | Output: 99999406525
+
+  ──────────────────────────────────────────────────
+  Round 1/2
+  ──────────────────────────────────────────────────
+
+  [Phase 1] THINK — Analyzing algorithm...
+  → 1. **Naive Algorithm's Time Complexity:**
+   The naive algorithm involves sorting the entire dataset of size \( N \) in 
+
+  [Phase 2] PSEUDOCODE — Writing precise steps...
+  → ```pseudocode
+// Setup (keep from naive)
+const int N = 10000000;
+const int K = 100;
+long long checksum = 0;
+std::vector<int> data(N);
+std::mt19937 gen(42);
+std::uniform_int_distribution<int> dist(0, 1
+
+  [Phase 3] VERIFY — Checking logic on examples...
+  → Let's walk through a small example to verify the correctness of the given pseudocode. We'll use a smaller test case for simplicity.
+
+### Small Test Ca
+
+  [Phase 4] TRANSLATE — Pseudocode → C++...
+
+  [Phase 5] CHECK — Compile, run, validate...
+  ✅ Output matches!
+  Optimized: 0.0983s
+  Speedup: 3.4x
+
+  ✅ Done in 160.1s (1 rounds)
+============================================================
+
+
+  ★ Decompose RESULT: 0.0983s → 3.4x ★
+
+============================================================
+  CarbonBench: task_007_prefix_sum — Range Sum with Prefix Sums
+============================================================
+  Naive: 9.2758s
+
+============================================================
+  CarbonCode DECOMPOSE | Optimize: Range Sum with Prefix Sums
+============================================================
+
+  [Baseline] Benchmarking naive code...
+  Naive: 10.4578s | Output: 414140857338
+
+  ──────────────────────────────────────────────────
+  Round 1/2
+  ──────────────────────────────────────────────────
+
+  [Phase 1] THINK — Analyzing algorithm...
+  → 1. **Naive Algorithm's Time Complexity:**
+   The naive algorithm generates `N` random numbers and then processes `Q` ran
+
+  [Phase 2] PSEUDOCODE — Writing precise steps...
+  → ```pseudocode
+// Setup (keep from naive)
+const int N = 500000
+const int Q = 50000
+random seed = 42
+uniform real distribution ddist(0.0, 100.0)
+uniform integer distribution qdist(0, N - 1)
+
+data = new 
+
+  [Phase 3] VERIFY — Checking logic on examples...
+  → Let's walk through a small example to verify the correctness of the pseudocode. We'll use a smaller test case for simplicity.
+
+### Small Test Case:
+- 
+
+  [Phase 4] TRANSLATE — Pseudocode → C++...
+
+  [Phase 5] CHECK — Compile, run, validate...
+  ❌ Output mismatch!
+     Expected: 414140857338
+     Got:      3828059382
+Elapsed time: 4.2e-08 seconds
+  Diagnosis: The issue lies in both A) ALGORITHM ERROR and B) TRANSLATION ERROR. The algorithm logic itself has a
+
+  ──────────────────────────────────────────────────
+  Round 2/2
+  ──────────────────────────────────────────────────
+
+  [Phase 1] THINK — Analyzing algorithm...
+  → 1. **Naive Algorithm's Time Complexity**:
+   - The naive algorithm generates `N` random numbers and then processes `Q` r
+
+  [Phase 2] PSEUDOCODE — Writing precise steps...
+  → ```pseudocode
+// Setup (keep from naive)
+const int N = 500000
+const int Q = 50000
+
+// Initialize random number generator and distributions
+gen = new Random(42)
+ddist = new UniformRealDistribution(0.0,
+
+  [Phase 3] VERIFY — Checking logic on examples...
+  → Let's walk through a small example to verify the correctness of the pseudocode. We will use a test case with `N = 5` and `Q = 3`.
+
+### Test Case:
+- **
+
+  [Phase 4] TRANSLATE — Pseudocode → C++...
+
+  [Phase 5] CHECK — Compile, run, validate...
+  ❌ Compile fail: /Users/william/Downloads/research_ai/CarbonCode/carboncode/tools/../../experimen
+  ✅ Output matches!
+  Optimized: 0.0084s
+  Speedup: 1244.1x
+
+  ✅ Done in 464.7s (2 rounds)
+============================================================
+
+
+  ★ Decompose RESULT: 0.0084s → 1244.1x ★
+
+============================================================
+  CarbonBench: task_010_two_pointer — Pair Count (O(n²) to O(n))
+============================================================
+  Naive: 0.0376s
+
+============================================================
+  CarbonCode DECOMPOSE | Optimize: Pair Count (O(n²) to O(n))
+============================================================
+
+  [Baseline] Benchmarking naive code...
+  Naive: 0.0376s | Output: 247
+
+  ──────────────────────────────────────────────────
+  Round 1/2
+  ──────────────────────────────────────────────────
+
+  [Phase 1] THINK — Analyzing algorithm...
+  → 1. **Naive Algorithm's Time Complexity:**
+   The naive algorithm uses a nested loop to check all pairs of elements in th
+
+  [Phase 2] PSEUDOCODE — Writing precise steps...
+  → ```pseudocode
+// Setup (keep from naive)
+const int N = 30000;
+const int TARGET = 500000;
+std::mt19937 gen(42);
+std::uniform_int_distribution<int> dist(0, 1000000);
+int* data = new int[N];
+for (int i =
+
+  [Phase 3] VERIFY — Checking logic on examples...
+  → Let's walk through a small example to verify the correctness of the given pseudocode. We'll use a test case with `N = 5` and `TARGET = 10`.
+
+### Test 
+
+  [Phase 4] TRANSLATE — Pseudocode → C++...
+
+  [Phase 5] CHECK — Compile, run, validate...
+  ✅ Output matches!
+  Optimized: 0.0077s
+  Speedup: 4.9x
+
+  ✅ Done in 89.7s (1 rounds)
+============================================================
+
+
+  ★ Decompose RESULT: 0.0077s → 4.9x ★

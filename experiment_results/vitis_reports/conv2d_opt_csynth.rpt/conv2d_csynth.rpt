@@ -1,0 +1,172 @@
+
+
+================================================================
+== Vitis HLS Report for 'conv2d'
+================================================================
+* Date:           Sat Apr  4 19:38:54 2026
+
+* Version:        2025.2 (Build 6295257 on Nov 14 2025)
+* Project:        proj_conv2d_opt
+* Solution:       sol1 (Vivado IP Flow Target)
+* Product family: virtexuplus
+* Target device:  xcvu9p-flga2104-2-i
+
+
+================================================================
+== Performance Estimates
+================================================================
++ Timing: 
+    * Summary: 
+    +--------+----------+----------+------------+
+    |  Clock |  Target  | Estimated| Uncertainty|
+    +--------+----------+----------+------------+
+    |ap_clk  |  10.00 ns|  5.363 ns|     2.70 ns|
+    +--------+----------+----------+------------+
+
++ Latency: 
+    * Summary: 
+    +---------+---------+-----------+-----------+------+------+---------+
+    |  Latency (cycles) |   Latency (absolute)  |   Interval  | Pipeline|
+    |   min   |   max   |    min    |    max    |  min |  max |   Type  |
+    +---------+---------+-----------+-----------+------+------+---------+
+    |     4505|     4505|  45.050 us|  45.050 us|  4506|  4506|       no|
+    +---------+---------+-----------+-----------+------+------+---------+
+
+    + Detail: 
+        * Instance: 
+        +-----------------------------------------------------------+------------------------------------------------+---------+---------+-----------+-----------+-----+-----+-------------------+
+        |                                                           |                                                |  Latency (cycles) |   Latency (absolute)  |  Interval |      Pipeline     |
+        |                          Instance                         |                     Module                     |   min   |   max   |    min    |    max    | min | max |        Type       |
+        +-----------------------------------------------------------+------------------------------------------------+---------+---------+-----------+-----------+-----+-----+-------------------+
+        |grp_conv2d_Pipeline_VITIS_LOOP_9_1_VITIS_LOOP_10_2_fu_142  |conv2d_Pipeline_VITIS_LOOP_9_1_VITIS_LOOP_10_2  |     4502|     4502|  45.020 us|  45.020 us|    0|    0|  loop pipeline stp|
+        +-----------------------------------------------------------+------------------------------------------------+---------+---------+-----------+-----------+-----+-----+-------------------+
+
+        * Loop: 
+        N/A
+
+
+
+================================================================
+== Utilization Estimates
+================================================================
+* Summary: 
++---------------------+---------+------+---------+---------+-----+
+|         Name        | BRAM_18K|  DSP |    FF   |   LUT   | URAM|
++---------------------+---------+------+---------+---------+-----+
+|DSP                  |        -|     -|        -|        -|    -|
+|Expression           |        -|     -|        -|        -|    -|
+|FIFO                 |        -|     -|        -|        -|    -|
+|Instance             |        -|     6|      258|      713|    -|
+|Memory               |        -|     -|        -|        -|    -|
+|Multiplexer          |        -|     -|        0|       68|    -|
+|Register             |        -|     -|      293|        -|    -|
++---------------------+---------+------+---------+---------+-----+
+|Total                |        0|     6|      551|      781|    0|
++---------------------+---------+------+---------+---------+-----+
+|Available SLR        |     1440|  2280|   788160|   394080|  320|
++---------------------+---------+------+---------+---------+-----+
+|Utilization SLR (%)  |        0|    ~0|       ~0|       ~0|    0|
++---------------------+---------+------+---------+---------+-----+
+|Available            |     4320|  6840|  2364480|  1182240|  960|
++---------------------+---------+------+---------+---------+-----+
+|Utilization (%)      |        0|    ~0|       ~0|       ~0|    0|
++---------------------+---------+------+---------+---------+-----+
+
++ Detail: 
+    * Instance: 
+    +-----------------------------------------------------------+------------------------------------------------+---------+----+-----+-----+-----+
+    |                          Instance                         |                     Module                     | BRAM_18K| DSP|  FF | LUT | URAM|
+    +-----------------------------------------------------------+------------------------------------------------+---------+----+-----+-----+-----+
+    |grp_conv2d_Pipeline_VITIS_LOOP_9_1_VITIS_LOOP_10_2_fu_142  |conv2d_Pipeline_VITIS_LOOP_9_1_VITIS_LOOP_10_2  |        0|   6|  258|  713|    0|
+    +-----------------------------------------------------------+------------------------------------------------+---------+----+-----+-----+-----+
+    |Total                                                      |                                                |        0|   6|  258|  713|    0|
+    +-----------------------------------------------------------+------------------------------------------------+---------+----+-----+-----+-----+
+
+    * DSP: 
+    N/A
+
+    * Memory: 
+    N/A
+
+    * FIFO: 
+    N/A
+
+    * Expression: 
+    N/A
+
+    * Multiplexer: 
+    +-------------------------+----+-----------+-----+-----------+
+    |           Name          | LUT| Input Size| Bits| Total Bits|
+    +-------------------------+----+-----------+-----+-----------+
+    |ap_NS_fsm                |  26|          5|    1|          5|
+    |kernel_0_address0_local  |  14|          3|    2|          6|
+    |kernel_1_address0_local  |  14|          3|    2|          6|
+    |kernel_2_address0_local  |  14|          3|    2|          6|
+    +-------------------------+----+-----------+-----+-----------+
+    |Total                    |  68|         14|    7|         23|
+    +-------------------------+----+-----------+-----+-----------+
+
+    * Register: 
+    +------------------------------------------------------------------------+----+----+-----+-----------+
+    |                                  Name                                  | FF | LUT| Bits| Const Bits|
+    +------------------------------------------------------------------------+----+----+-----+-----------+
+    |ap_CS_fsm                                                               |   4|   0|    4|          0|
+    |grp_conv2d_Pipeline_VITIS_LOOP_9_1_VITIS_LOOP_10_2_fu_142_ap_start_reg  |   1|   0|    1|          0|
+    |kernel_0_load_1_reg_225                                                 |  32|   0|   32|          0|
+    |kernel_0_load_2_reg_230                                                 |  32|   0|   32|          0|
+    |kernel_0_load_reg_180                                                   |  32|   0|   32|          0|
+    |kernel_1_load_1_reg_235                                                 |  32|   0|   32|          0|
+    |kernel_1_load_2_reg_240                                                 |  32|   0|   32|          0|
+    |kernel_1_load_reg_195                                                   |  32|   0|   32|          0|
+    |kernel_2_load_1_reg_245                                                 |  32|   0|   32|          0|
+    |kernel_2_load_2_reg_250                                                 |  32|   0|   32|          0|
+    |kernel_2_load_reg_210                                                   |  32|   0|   32|          0|
+    +------------------------------------------------------------------------+----+----+-----+-----------+
+    |Total                                                                   | 293|   0|  293|          0|
+    +------------------------------------------------------------------------+----+----+-----+-----------+
+
+
+
+================================================================
+== Interface
+================================================================
+* Summary: 
++-------------------+-----+-----+------------+--------------+--------------+
+|     RTL Ports     | Dir | Bits|  Protocol  | Source Object|    C Type    |
++-------------------+-----+-----+------------+--------------+--------------+
+|ap_clk             |   in|    1|  ap_ctrl_hs|        conv2d|  return value|
+|ap_rst             |   in|    1|  ap_ctrl_hs|        conv2d|  return value|
+|ap_start           |   in|    1|  ap_ctrl_hs|        conv2d|  return value|
+|ap_done            |  out|    1|  ap_ctrl_hs|        conv2d|  return value|
+|ap_idle            |  out|    1|  ap_ctrl_hs|        conv2d|  return value|
+|ap_ready           |  out|    1|  ap_ctrl_hs|        conv2d|  return value|
+|input_r_address0   |  out|   10|   ap_memory|       input_r|         array|
+|input_r_ce0        |  out|    1|   ap_memory|       input_r|         array|
+|input_r_q0         |   in|   32|   ap_memory|       input_r|         array|
+|input_r_address1   |  out|   10|   ap_memory|       input_r|         array|
+|input_r_ce1        |  out|    1|   ap_memory|       input_r|         array|
+|input_r_q1         |   in|   32|   ap_memory|       input_r|         array|
+|kernel_0_address0  |  out|    2|   ap_memory|      kernel_0|         array|
+|kernel_0_ce0       |  out|    1|   ap_memory|      kernel_0|         array|
+|kernel_0_q0        |   in|   32|   ap_memory|      kernel_0|         array|
+|kernel_0_address1  |  out|    2|   ap_memory|      kernel_0|         array|
+|kernel_0_ce1       |  out|    1|   ap_memory|      kernel_0|         array|
+|kernel_0_q1        |   in|   32|   ap_memory|      kernel_0|         array|
+|kernel_1_address0  |  out|    2|   ap_memory|      kernel_1|         array|
+|kernel_1_ce0       |  out|    1|   ap_memory|      kernel_1|         array|
+|kernel_1_q0        |   in|   32|   ap_memory|      kernel_1|         array|
+|kernel_1_address1  |  out|    2|   ap_memory|      kernel_1|         array|
+|kernel_1_ce1       |  out|    1|   ap_memory|      kernel_1|         array|
+|kernel_1_q1        |   in|   32|   ap_memory|      kernel_1|         array|
+|kernel_2_address0  |  out|    2|   ap_memory|      kernel_2|         array|
+|kernel_2_ce0       |  out|    1|   ap_memory|      kernel_2|         array|
+|kernel_2_q0        |   in|   32|   ap_memory|      kernel_2|         array|
+|kernel_2_address1  |  out|    2|   ap_memory|      kernel_2|         array|
+|kernel_2_ce1       |  out|    1|   ap_memory|      kernel_2|         array|
+|kernel_2_q1        |   in|   32|   ap_memory|      kernel_2|         array|
+|output_r_address0  |  out|   10|   ap_memory|      output_r|         array|
+|output_r_ce0       |  out|    1|   ap_memory|      output_r|         array|
+|output_r_we0       |  out|    1|   ap_memory|      output_r|         array|
+|output_r_d0        |  out|   32|   ap_memory|      output_r|         array|
++-------------------+-----+-----+------------+--------------+--------------+
+

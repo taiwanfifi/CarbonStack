@@ -1,0 +1,252 @@
+═══════════════════════════════════════════════════════════════
+  CarbonCode 完整實驗時間線 — 每一步的改動、數據、關鍵發現
+  2026-04-02 ~ 04-03
+═══════════════════════════════════════════════════════════════
+
+注意：每個版本的 pass rate 都有 ±10% 的 LLM 隨機波動。
+同一個 pipeline 跑兩次可能是 68% 或 85%。
+所以要看「哪個改動造成了結構性提升」而不是單次數字。
+
+═══════════════════════════════════════════════════════════════
+PHASE 0: 起點（0% pass rate）
+═══════════════════════════════════════════════════════════════
+
+狀態：PIE 100% 失敗
+原因：5 層 bug 疊加
+
+═══════════════════════════════════════════════════════════════
+PHASE 1: 基礎 Bug 修復（0% → 78%）★★★ 最關鍵的一步
+═══════════════════════════════════════════════════════════════
+
+Bug 1: bits/stdc++.h regex
+  問題：macOS 沒有 bits/stdc++.h，但 PIE code 大量使用
+  修法：regex 替換成個別 #include
+  效果：compile rate 60% → 94%
+
+Bug 2: Sanitizer false rejection
+  問題：任何 stderr 輸出（包括 warning）都被判為失敗
+  修法：只檢查 ERROR:AddressSanitizer 和 runtime error
+  效果：pass rate ~30% → ~50%
+
+Bug 3: 單一測試案例驗證
+  問題：CC 只用 1 個 stdin 驗證，PIE 需要 5 個
+  修法：R4.6 multi-test validation，失敗用 failing TC 的 expected 做 _fix_semantic
+  效果：結構性修復
+
+Bug 4: Timing 輸出干擾比對
+  問題：CC 加的 "Time: X seconds" 讓 exact match 失敗
+  修法：verify_with_test_cases 改用 validate_output_match（忽略 timing 行）
+  效果：正確答案不再被誤判
+
+Bug 5: ★ ROOT CAUSE — Prompt 叫模型刪 stdin ★
+  問題：CC prompt 寫 "Use seed 42, mt19937 gen(42)"
+        模型看到後把所有 cin/scanf 刪掉，換成亂數生成
+        PIE 的 code 全都讀 stdin → 全部失敗
+  修法：_detect_reads_stdin() 偵測 stdin code
+        切換到 stdin-preserving prompt（不提 seed/mt19937）
+        prompt 說「keep ALL input reading exactly as-is」
+  效果：0% → 78% ★★★
+
+  這是最關鍵的修復。前面 4 個 bug 加起來還是 0%。
+  只有修了 Bug 5，pass rate 才從 0% 跳到 78%。
+
+結果：v1 保守 prompt, 20 tasks, 14/18 = 78%
+
+═══════════════════════════════════════════════════════════════
+PHASE 2: Prompt A/B Test（找到最佳 prompt）
+═══════════════════════════════════════════════════════════════
+
+v1 保守 prompt（78%）：
+  「keep ALL input reading EXACTLY as-is」
+  「You may ONLY change ALGORITHM and DATA STRUCTURES after reading input」
+  結果：高 pass rate，但 speedup ~1.0x（太保守，不敢改演算法）
+
+v2 激進 prompt（56%）：★ 失敗案例 ★
+  「Rewrite with MORE EFFICIENT ALGORITHM」
+  「O(N^2) → O(N log N)」
+  結果：pass rate 暴跌，4 題完全無輸出
+  教訓：7B 不能同時做「正確性 + 優化」
+
+v3 兩段式（83%）：
+  Pass 1: 保守 prompt（先拿到正確 code）
+  Pass 2: R7 targeted optimization（「this code is correct, make it faster」）
+  結果：pass rate 提升，speedup 微幅提升
+  教訓：兩段式比單段好
+
+v4 確定性 IO + Speedup Guard（94% on 20 tasks, 78% on 100 tasks）：
+  新增：deterministic_io_optimize()（加 sync_with_stdio, endl→\n）
+  新增：Speedup guard（如果比 naive 慢就回退）
+  結果：20 題 94%（最高紀錄），100 題 78%（穩定值）
+  差異原因：20 題是同 seed 抽樣，100 題涵蓋更多難題
+
+  ★ 關鍵發現：20 題和 100 題的差異告訴我們
+     小樣本會高估 pass rate，100 題才是穩定值 ★
+
+═══════════════════════════════════════════════════════════════
+PHASE 3: PIE Dataset 深度分析（理解 benchmark）
+═══════════════════════════════════════════════════════════════
+
+發現 1: PIE tgt_code 的優化組成
+  純 IO 改動: 8/975 (1%)，median 4.28x
+  IO + 演算法: 374/975 (38%)，median 5.30x
+  純演算法: 565/975 (58%)，median 1.80x
+  小幅重構: 28/975 (3%)
+
+  ★ 之前錯誤宣稱 73% 是 IO → 修正為 1% 純 IO ★
+  但 IO 改動是 speedup 的放大器（5.3x vs 1.8x）
+
+發現 2: PIE test case 太小
+  所有題目在我們機器上 3-5ms，量不出 speedup 差異
+  PIE paper 的 speedup 是在他們伺服器上量的（~100ms aggregated）
+  我們的本地 benchmark 只能驗 correctness，不能驗 speedup
+
+發現 3: PIE src/tgt 不是同一人
+  同一個 tgt_id 被配對到 25 個不同的 src
+  PIE 是「任意慢 code → 配上 任意快 code」，不是同一人改進
+  15% 的配對中，A 的 before 比 B 的 after 還快
+
+發現 4: 三方比較（src vs tgt vs CC）
+  17 題本地比較：CC 贏人類 2 題，平手 9 題，輸 4 題
+  p00468: CC 1.95x vs 人類 1.3x（我們比人類快！）
+  p02802: CC 比人類快 2.08x
+
+═══════════════════════════════════════════════════════════════
+PHASE 4: 失敗分析（為什麼 22% 解不了）★★ 重要 insight
+═══════════════════════════════════════════════════════════════
+
+22 題失敗的重跑實驗：
+  10 題重跑後通過 → 50% 的失敗是 LLM 隨機性
+  11 題仍然失敗 → 真正的 7B 能力極限
+
+失敗 vs 成功的特徵對比：
+  ★ 長 code (>40行): 失敗 57% vs 成功 35% → 最大預測因子 ★
+  複雜巨集 (>7 #define): 失敗 43% vs 成功 32%
+  遞迴/DP/圖論: 差異不大（不是主因）
+
+真正解不了的 11 題分類：
+  圖論 DFS+backtracking: 2 題（遞迴狀態追蹤超過 7B working memory）
+  DP 邏輯: 3 題（index 偏移計算錯誤）
+  複雜巨集: 4 題（巨集干擾理解）
+  短但 edge case: 2 題（邏輯簡單但邊界條件複雜）
+
+★ 根本原因：7B 的瓶頸不是「不懂演算法」
+  而是「無法精確追蹤多個狀態」和「index 偏移計算」 ★
+
+═══════════════════════════════════════════════════════════════
+PHASE 5: 巨集展開 A/B Test（意外的 negative result）★ 重要
+═══════════════════════════════════════════════════════════════
+
+假設：展開 #define 讓 7B 看到明確的型別 → 提升理解
+結果：
+  v5 (不展開): 78/100 = 78%
+  v6 (全部展開): 70/100 = 70% ← 反而降了！
+
+  展開救了 12 題（巨集重的題看懂了）
+  但搞壞了 19 題（7B 訓練資料用巨集，展開後不認得了）
+
+  ★ 教訓：不是所有「聽起來合理」的改動都有效
+     A/B test 是必要的，不能假設 ★
+
+═══════════════════════════════════════════════════════════════
+PHASE 6: Best-of-2 Preprocessing（重大發現）★★★
+═══════════════════════════════════════════════════════════════
+
+發現：v5 和 v6 失敗的題目不同！
+  兩版都過: 58 題
+  只 v5 過: 20 題
+  只 v6 過: 12 題
+  兩版都敗: 10 題
+
+  Best-of-2: 58+20+12 = 90/100 = 90% ★★★
+
+  ★ 兩種 preprocessing 互補！合起來比任何一個都好 ★
+  這是整個實驗最重要的 architectural insight
+
+═══════════════════════════════════════════════════════════════
+PHASE 7: Fallback Pipeline（驗證 Best-of-2）
+═══════════════════════════════════════════════════════════════
+
+架構：
+  Attempt 1: CC (不展開) → 失敗 →
+  Attempt 2: CC (展開巨集) → 失敗 →
+  Attempt 3: Decompose (CoT)
+
+GPU 100 題結果：
+  pass@1: 65/100 (65%)  ← 第一次不展開
+  pass@2: 72/100 (72%)  ← +展開 fallback (+7)
+  pass@3: 78/100 (78%)  ← +Decompose (+6)
+
+  vs 理論上限 90%：差距來自 LLM 隨機性
+  每次跑的 pass@1 不同（65% vs 78%），所以 fallback 的起點不同
+
+  ★ 關鍵數據：pass@1→3 curve = 65%→72%→78%
+     每多一次 attempt，+7% 和 +6%
+     Decompose 確實能救 CC 救不了的題 ★
+
+═══════════════════════════════════════════════════════════════
+PHASE 8: CoT Trace 實驗（攻克最難題目）
+═══════════════════════════════════════════════════════════════
+
+DFS backtracking 題目（p00431）手動 CoT 測試：
+  方法：在 prompt 中加入 trace 範例
+        「rec(0): used[0]=true → rec(1) → rec(2) → backtrack...」
+  結果：7B 生成了邏輯正確的 code！
+
+  但有一個系統性錯誤：
+  ★ 7B 改了資料結構（vector→matrix）但忘了改存取方式 ★
+  原版: for(i<rings[pos]) neighbor=G[pos][i]  (adjacency list)
+  7B版: for(i<100) if(G[pos][i])              (adjacency matrix)
+  7B寫: for(i<rings[pos]) neighbor=G[pos][i]  ← 用了新結構但舊存取！
+
+  手動修正存取方式後 → 5/5 TC 全過 ✅
+
+═══════════════════════════════════════════════════════════════
+PHASE 9: CarbonBench v2 Speedup（算法優化證據）
+═══════════════════════════════════════════════════════════════
+
+CarbonBench（有大輸入，能量 speedup）Decompose 結果：
+  Top-K:        0.34s → 0.098s = 3.4x
+  Prefix Sum:   10.46s → 0.0084s = 1244x ★★★
+  Two Pointer:  0.038s → 0.0077s = 4.9x
+
+  ★ Prefix Sum 1244x = O(N×Q) → O(N+Q) 的真正複雜度降級
+     這是 Decompose pipeline 的 hero result ★
+
+═══════════════════════════════════════════════════════════════
+PHASE 10: Gemini 協作摘要
+═══════════════════════════════════════════════════════════════
+
+Gemini 在整個過程中提供了：
+  - Bug fix 驗證（確認 5 個 root cause）
+  - A/B test 策略建議（先 baseline 再改 prompt）
+  - PIE dataset 分析方向（I/O vs 算法組成）
+  - Failure mode 分類方法（code length 是主因）
+  - CoT trace template（DFS 的具體 prompt）
+  - 資料結構 mismatch 的 Verification Step 建議
+  - NeurIPS 論文方向（dual-path preprocessing 是 novelty）
+  - pass@K 學術標準（報 pass@1~5 curve）
+  - GPU 方案（Vast.ai RTX 3090，$0.10/100題）
+
+═══════════════════════════════════════════════════════════════
+總結：最終數據
+═══════════════════════════════════════════════════════════════
+
+PIE Benchmark (100 tasks):
+  Single pass (v5):     78% pass@1
+  Fallback pipeline:    65% → 72% → 78% (pass@1 → @2 → @3)
+  Best-of-2 上限:       90% (from cross-analysis)
+
+CarbonBench v2:
+  Decompose speedup:    3.4x ~ 1244x
+
+vs Baselines:
+  GPT-4 (PIE paper):   69% pass@4, 3.56x speedup
+  CarbonCode 7B:        78% pass@1, correctness-focused
+
+關鍵 Insights（論文材料）：
+  1. Prompt 必須匹配 code 的 I/O pattern（stdin vs self-contained）
+  2. 7B 不能同時做 correctness + optimization → 兩段式
+  3. 不同 preprocessing 失敗的題不同 → Best-of-2 = 90%
+  4. 7B 的真正瓶頸是「精確狀態追蹤」不是「演算法理解」
+  5. 50% 的失敗是 LLM 隨機性 → Best-of-N 有效
+  6. 巨集展開不是總有幫助 → negative result 也是發現

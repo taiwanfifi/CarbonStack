@@ -1,0 +1,651 @@
+{
+  "timestamp": 1775333336,
+  "models": [
+    "deepseek-r1:14b",
+    "gemma4:latest",
+    "qwen2.5-coder:7b"
+  ],
+  "results": {
+    "T1_qwen7b_oneshot": [
+      {
+        "algo": "fir_filter",
+        "success": true,
+        "tm": 0.667,
+        "pfs": 0.1,
+        "llm": [
+          "#pragma HLS ARRAY_PARTITION variable=coeffs type=cyclic dim=1 factor=4"
+        ],
+        "pareto": [
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS ARRAY_PARTITION variable=coeffs type=complete dim=1",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=16"
+        ]
+      },
+      {
+        "algo": "gemm",
+        "success": true,
+        "tm": 1.0,
+        "pfs": 0.8,
+        "llm": [
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS ARRAY_PARTITION variable=A complete dim=0",
+          "#pragma HLS ARRAY_PARTITION variable=B complete dim=1",
+          "#pragma HLS UNROLL factor=4"
+        ],
+        "pareto": [
+          "#pragma HLS ARRAY_PARTITION variable=B type=cyclic dim=2 factor=8",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=8"
+        ]
+      },
+      {
+        "algo": "dct",
+        "success": true,
+        "tm": 1.0,
+        "pfs": 0.867,
+        "llm": [
+          "#pragma HLS ARRAY_PARTITION variable=input complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=output complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=cos_table complete dim=1",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=4"
+        ],
+        "pareto": [
+          "#pragma HLS ARRAY_PARTITION variable=cos_table type=complete dim=1",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL"
+        ]
+      },
+      {
+        "algo": "stencil2d",
+        "success": true,
+        "tm": 1.0,
+        "pfs": 0.867,
+        "llm": [
+          "#pragma HLS ARRAY_PARTITION variable=orig complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=sol complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=filter complete dim=1",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=4"
+        ],
+        "pareto": [
+          "#pragma HLS ARRAY_PARTITION variable=filter type=complete",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL"
+        ]
+      },
+      {
+        "algo": "black_scholes",
+        "success": true,
+        "tm": 1.0,
+        "pfs": 0.867,
+        "llm": [
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=4",
+          "#pragma HLS ARRAY_PARTITION variable=T complete dim=0",
+          "#pragma HLS ARRAY_PARTITION variable=S complete dim=0",
+          "#pragma HLS ARRAY_PARTITION variable=K complete dim=0"
+        ],
+        "pareto": [
+          "#pragma HLS ARRAY_PARTITION variable=S type=cyclic dim=1 factor=16",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=8"
+        ]
+      }
+    ],
+    "T2_qwen7b_chain": [
+      {
+        "algo": "fir_filter",
+        "success": true,
+        "tm": 0.667,
+        "pfs": 0.1,
+        "llm": [
+          "#pragma HLS ARRAY_PARTITION variable=coeffs type=cyclic dim=1 factor=4"
+        ],
+        "pareto": [
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS ARRAY_PARTITION variable=coeffs type=complete dim=1",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=16"
+        ]
+      },
+      {
+        "algo": "gemm",
+        "success": true,
+        "tm": 0.667,
+        "pfs": 0.667,
+        "llm": [
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=8"
+        ],
+        "pareto": [
+          "#pragma HLS ARRAY_PARTITION variable=B type=cyclic dim=2 factor=8",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=8"
+        ]
+      },
+      {
+        "algo": "dct",
+        "success": true,
+        "tm": 0.667,
+        "pfs": 0.6,
+        "llm": [
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=8"
+        ],
+        "pareto": [
+          "#pragma HLS ARRAY_PARTITION variable=cos_table type=complete dim=1",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL"
+        ]
+      },
+      {
+        "algo": "stencil2d",
+        "success": true,
+        "tm": 1.0,
+        "pfs": 0.867,
+        "llm": [
+          "#pragma HLS ARRAY_PARTITION variable=orig complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=sol complete dim=1",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=4"
+        ],
+        "pareto": [
+          "#pragma HLS ARRAY_PARTITION variable=filter type=complete",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL"
+        ]
+      },
+      {
+        "algo": "black_scholes",
+        "success": true,
+        "tm": 0.667,
+        "pfs": 0.667,
+        "llm": [
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=8"
+        ],
+        "pareto": [
+          "#pragma HLS ARRAY_PARTITION variable=S type=cyclic dim=1 factor=16",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=8"
+        ]
+      }
+    ],
+    "T3_gemma4_oneshot": [
+      {
+        "algo": "fir_filter",
+        "success": true,
+        "tm": 0.333,
+        "pfs": 0.75,
+        "llm": [
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL"
+        ],
+        "pareto": [
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS ARRAY_PARTITION variable=coeffs type=complete dim=1",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=16"
+        ]
+      },
+      {
+        "algo": "gemm",
+        "success": false
+      },
+      {
+        "algo": "dct",
+        "success": true,
+        "tm": 1.0,
+        "pfs": 1.0,
+        "llm": [
+          "#pragma HLS ARRAY_PARTITION variable=input complete dim=2",
+          "#pragma HLS ARRAY_PARTITION variable=cos_table complete dim=2",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL"
+        ],
+        "pareto": [
+          "#pragma HLS ARRAY_PARTITION variable=cos_table type=complete dim=1",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL"
+        ]
+      },
+      {
+        "algo": "stencil2d",
+        "success": true,
+        "tm": 0.667,
+        "pfs": 0.667,
+        "llm": [
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL",
+          "#pragma HLS UNROLL"
+        ],
+        "pareto": [
+          "#pragma HLS ARRAY_PARTITION variable=filter type=complete",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL"
+        ]
+      },
+      {
+        "algo": "black_scholes",
+        "success": true,
+        "tm": 1.0,
+        "pfs": 0.733,
+        "llm": [
+          "#pragma HLS ARRAY_PARTITION variable=put complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=call complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=T complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=S complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=K complete dim=1"
+        ],
+        "pareto": [
+          "#pragma HLS ARRAY_PARTITION variable=S type=cyclic dim=1 factor=16",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=8"
+        ]
+      }
+    ],
+    "T4_gemma4_chain": [
+      {
+        "algo": "fir_filter",
+        "success": true,
+        "tm": 0.667,
+        "pfs": 1.0,
+        "llm": [
+          "#pragma HLS ARRAY_PARTITION variable=coeffs type=cyclic dim=1 factor=TAPS",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL"
+        ],
+        "pareto": [
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS ARRAY_PARTITION variable=coeffs type=complete dim=1",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=16"
+        ]
+      },
+      {
+        "algo": "gemm",
+        "success": true,
+        "tm": 1.0,
+        "pfs": 0.8,
+        "llm": [
+          "#pragma HLS ARRAY_PARTITION variable=A complete dim=2",
+          "#pragma HLS ARRAY_PARTITION variable=B complete dim=2",
+          "#pragma HLS ARRAY_PARTITION variable=C complete dim=2",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL"
+        ],
+        "pareto": [
+          "#pragma HLS ARRAY_PARTITION variable=B type=cyclic dim=2 factor=8",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=8"
+        ]
+      },
+      {
+        "algo": "dct",
+        "success": true,
+        "tm": 1.0,
+        "pfs": 0.933,
+        "llm": [
+          "#pragma HLS ARRAY_PARTITION variable=input complete dim=2",
+          "#pragma HLS ARRAY_PARTITION variable=output complete dim=2",
+          "#pragma HLS ARRAY_PARTITION variable=cos_table complete dim=2",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS PIPELINE II=1"
+        ],
+        "pareto": [
+          "#pragma HLS ARRAY_PARTITION variable=cos_table type=complete dim=1",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL"
+        ]
+      },
+      {
+        "algo": "stencil2d",
+        "success": true,
+        "tm": 0.667,
+        "pfs": 0.667,
+        "llm": [
+          "#pragma HLS ARRAY_PARTITION variable=orig complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=orig complete dim=2",
+          "#pragma HLS ARRAY_PARTITION variable=sol complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=sol complete dim=2",
+          "#pragma HLS PIPELINE II=1"
+        ],
+        "pareto": [
+          "#pragma HLS ARRAY_PARTITION variable=filter type=complete",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL"
+        ]
+      },
+      {
+        "algo": "black_scholes",
+        "success": true,
+        "tm": 1.0,
+        "pfs": 0.867,
+        "llm": [
+          "#pragma HLS ARRAY_PARTITION variable=put complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=call complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=T complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=S complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=K complete dim=1"
+        ],
+        "pareto": [
+          "#pragma HLS ARRAY_PARTITION variable=S type=cyclic dim=1 factor=16",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=8"
+        ]
+      }
+    ],
+    "T5_deepseek_oneshot": [
+      {
+        "algo": "fir_filter",
+        "success": false
+      },
+      {
+        "algo": "gemm",
+        "success": true,
+        "tm": 0.333,
+        "pfs": 0.6,
+        "llm": [
+          "#pragma HLS RESOURCE variable=A core=BRAM_18K",
+          "#pragma HLS RESOURCE variable=B core=BRAM_18K",
+          "#pragma HLS RESOURCE variable=C core=BRAM_18K",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS PIPELINE II=1"
+        ],
+        "pareto": [
+          "#pragma HLS ARRAY_PARTITION variable=B type=cyclic dim=2 factor=8",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=8"
+        ]
+      },
+      {
+        "algo": "dct",
+        "success": true,
+        "tm": 0.667,
+        "pfs": 0.6,
+        "llm": [
+          "#pragma HLS RESOURCE variable=cos_table limit=BRAM:1",
+          "#pragma HLS RESOURCE variable=input limit=BRAM:1",
+          "#pragma HLS RESOURCE variable=output limit=BRAM:1",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=8"
+        ],
+        "pareto": [
+          "#pragma HLS ARRAY_PARTITION variable=cos_table type=complete dim=1",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL"
+        ]
+      },
+      {
+        "algo": "stencil2d",
+        "success": true,
+        "tm": 1.0,
+        "pfs": 0.745,
+        "llm": [
+          "#pragma HLS ARRAY_PARTITION variable=orig dim=0 factor=4",
+          "#pragma HLS ARRAY_PARTITION variable=sol dim=0 factor=4",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=9"
+        ],
+        "pareto": [
+          "#pragma HLS ARRAY_PARTITION variable=filter type=complete",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL"
+        ]
+      },
+      {
+        "algo": "black_scholes",
+        "success": false
+      }
+    ],
+    "T6_qwen_gemma_dual": [
+      {
+        "algo": "fir_filter",
+        "success": true,
+        "tm": 0.667,
+        "pfs": 1.0,
+        "llm": [
+          "#pragma HLS ARRAY_PARTITION variable=coeffs type=complete dim=1",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL"
+        ],
+        "pareto": [
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS ARRAY_PARTITION variable=coeffs type=complete dim=1",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=16"
+        ]
+      },
+      {
+        "algo": "gemm",
+        "success": false
+      },
+      {
+        "algo": "dct",
+        "success": true,
+        "tm": 0.667,
+        "pfs": 0.667,
+        "llm": [
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL"
+        ],
+        "pareto": [
+          "#pragma HLS ARRAY_PARTITION variable=cos_table type=complete dim=1",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL"
+        ]
+      },
+      {
+        "algo": "stencil2d",
+        "success": true,
+        "tm": 1.0,
+        "pfs": 1.0,
+        "llm": [
+          "#pragma HLS ARRAY_PARTITION variable=orig complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=orig complete dim=2",
+          "#pragma HLS ARRAY_PARTITION variable=filter complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=filter complete dim=2",
+          "#pragma HLS PIPELINE II=1"
+        ],
+        "pareto": [
+          "#pragma HLS ARRAY_PARTITION variable=filter type=complete",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL"
+        ]
+      },
+      {
+        "algo": "black_scholes",
+        "success": true,
+        "tm": 0.667,
+        "pfs": 0.533,
+        "llm": [
+          "#pragma HLS ARRAY_PARTITION variable=put complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=call complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=T complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=S complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=K complete dim=1"
+        ],
+        "pareto": [
+          "#pragma HLS ARRAY_PARTITION variable=S type=cyclic dim=1 factor=16",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=8"
+        ]
+      }
+    ],
+    "T7_gemma_qwen_dual": [
+      {
+        "algo": "fir_filter",
+        "success": true,
+        "tm": 0.667,
+        "pfs": 0.25,
+        "llm": [
+          "#pragma HLS ARRAY_PARTITION variable=coeffs type=cyclic dim=1 factor=TAPS/4"
+        ],
+        "pareto": [
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS ARRAY_PARTITION variable=coeffs type=complete dim=1",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=16"
+        ]
+      },
+      {
+        "algo": "gemm",
+        "success": true,
+        "tm": 0.667,
+        "pfs": 0.533,
+        "llm": [
+          "#pragma HLS PIPELINE II=4",
+          "#pragma HLS UNROLL factor=8",
+          "#pragma HLS PIPELINE II=1"
+        ],
+        "pareto": [
+          "#pragma HLS ARRAY_PARTITION variable=B type=cyclic dim=2 factor=8",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=8"
+        ]
+      },
+      {
+        "algo": "dct",
+        "success": true,
+        "tm": 0.667,
+        "pfs": 0.533,
+        "llm": [
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=4"
+        ],
+        "pareto": [
+          "#pragma HLS ARRAY_PARTITION variable=cos_table type=complete dim=1",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL"
+        ]
+      },
+      {
+        "algo": "stencil2d",
+        "success": true,
+        "tm": 0.667,
+        "pfs": 0.533,
+        "llm": [
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=4 // Increase unroll factor for better parallelism"
+        ],
+        "pareto": [
+          "#pragma HLS ARRAY_PARTITION variable=filter type=complete",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL"
+        ]
+      },
+      {
+        "algo": "black_scholes",
+        "success": true,
+        "tm": 1.0,
+        "pfs": 0.8,
+        "llm": [
+          "#pragma HLS ARRAY_PARTITION variable=put complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=call complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=T complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=S complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=K complete dim=1"
+        ],
+        "pareto": [
+          "#pragma HLS ARRAY_PARTITION variable=S type=cyclic dim=1 factor=16",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=8"
+        ]
+      }
+    ],
+    "T8_best_of_n": [
+      {
+        "algo": "fir_filter",
+        "success": true,
+        "tm": 0.667,
+        "pfs": 1.0,
+        "llm": [
+          "#pragma HLS ARRAY_PARTITION variable=coeffs type=block dim=1 factor=TAPS",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL"
+        ],
+        "pareto": [
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS ARRAY_PARTITION variable=coeffs type=complete dim=1",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=16"
+        ]
+      },
+      {
+        "algo": "gemm",
+        "success": true,
+        "tm": 1.0,
+        "pfs": 0.8,
+        "llm": [
+          "#pragma HLS ARRAY_PARTITION variable=A complete",
+          "#pragma HLS ARRAY_PARTITION variable=B complete",
+          "#pragma HLS ARRAY_PARTITION variable=C complete",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=4"
+        ],
+        "pareto": [
+          "#pragma HLS ARRAY_PARTITION variable=B type=cyclic dim=2 factor=8",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=8"
+        ]
+      },
+      {
+        "algo": "dct",
+        "success": true,
+        "tm": 1.0,
+        "pfs": 0.867,
+        "llm": [
+          "#pragma HLS ARRAY_PARTITION variable=input complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=output complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=cos_table complete dim=1",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=4"
+        ],
+        "pareto": [
+          "#pragma HLS ARRAY_PARTITION variable=cos_table type=complete dim=1",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL"
+        ]
+      },
+      {
+        "algo": "stencil2d",
+        "success": true,
+        "tm": 1.0,
+        "pfs": 0.867,
+        "llm": [
+          "#pragma HLS ARRAY_PARTITION variable=orig complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=sol complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=filter complete dim=1",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=4"
+        ],
+        "pareto": [
+          "#pragma HLS ARRAY_PARTITION variable=filter type=complete",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL"
+        ]
+      },
+      {
+        "algo": "black_scholes",
+        "success": true,
+        "tm": 1.0,
+        "pfs": 0.867,
+        "llm": [
+          "#pragma HLS ARRAY_PARTITION variable=put complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=call complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=T complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=S complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=K complete dim=1"
+        ],
+        "pareto": [
+          "#pragma HLS ARRAY_PARTITION variable=S type=cyclic dim=1 factor=16",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=8"
+        ]
+      }
+    ]
+  }
+}

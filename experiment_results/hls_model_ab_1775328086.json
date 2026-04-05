@@ -1,0 +1,229 @@
+{
+  "timestamp": 1775328086,
+  "results": {
+    "qwen7b_oneshot": [
+      {
+        "algo": "fir_filter",
+        "success": true,
+        "type_match": 1.0,
+        "pfs": 0.686,
+        "llm_pragmas": [
+          "#pragma HLS ARRAY_PARTITION variable=coeffs type=cyclic dim=1 factor=8",
+          "#pragma HLS ARRAY_PARTITION variable=output type=cyclic dim=1 factor=16",
+          "#pragma HLS ARRAY_PARTITION variable=input type=cyclic dim=1 factor=2",
+          "#pragma HLS ARRAY_PARTITION variable=acc type=cyclic dim=1 factor=4",
+          "#pragma HLS PIPELINE II=1"
+        ],
+        "pareto_pragmas": [
+          "#pragma HLS ARRAY_PARTITION variable=output type=cyclic dim=1 factor=16",
+          "#pragma HLS ARRAY_PARTITION variable=coeffs type=cyclic dim=1 factor=8",
+          "#pragma HLS ARRAY_PARTITION variable=input type=cyclic dim=1 factor=16",
+          "#pragma HLS PIPELINE",
+          "#pragma HLS UNROLL factor=16"
+        ]
+      },
+      {
+        "algo": "dct",
+        "success": true,
+        "type_match": 1.0,
+        "pfs": 0.6,
+        "llm_pragmas": [
+          "#pragma HLS ARRAY_PARTITION variable=output type=cyclic dim=1 factor=8",
+          "#pragma HLS ARRAY_PARTITION variable=input type=cyclic dim=1 factor=1",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=4",
+          "#pragma HLS PIPELINE II=1"
+        ],
+        "pareto_pragmas": [
+          "#pragma HLS ARRAY_PARTITION variable=output type=cyclic dim=1 factor=1",
+          "#pragma HLS ARRAY_PARTITION variable=input type=cyclic dim=1 factor=16",
+          "#pragma HLS PIPELINE",
+          "#pragma HLS UNROLL factor=1",
+          "#pragma HLS PIPELINE OFF"
+        ]
+      },
+      {
+        "algo": "gemm_ncubed",
+        "success": true,
+        "type_match": 1.0,
+        "pfs": 1.0,
+        "llm_pragmas": [],
+        "pareto_pragmas": []
+      },
+      {
+        "algo": "stencil_stencil2d",
+        "success": true,
+        "type_match": 1.0,
+        "pfs": 0.6,
+        "llm_pragmas": [
+          "#pragma HLS ARRAY_PARTITION variable=filter type=cyclic dim=1 factor=4",
+          "#pragma HLS ARRAY_PARTITION variable=sol type=cyclic dim=1 factor=8",
+          "#pragma HLS ARRAY_PARTITION variable=orig type=cyclic dim=1 factor=4",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=4"
+        ],
+        "pareto_pragmas": [
+          "#pragma HLS ARRAY_PARTITION variable=filter type=cyclic dim=1 factor=8",
+          "#pragma HLS ARRAY_PARTITION variable=sol type=cyclic dim=1 factor=8",
+          "#pragma HLS ARRAY_PARTITION variable=orig type=cyclic dim=1 factor=8",
+          "#pragma HLS PIPELINE",
+          "#pragma HLS UNROLL factor=8"
+        ]
+      },
+      {
+        "algo": "black_scholes",
+        "success": true,
+        "type_match": 0.333,
+        "pfs": 0.714,
+        "llm_pragmas": [
+          "#pragma HLS ARRAY_PARTITION variable=put type=cyclic dim=1 factor=8",
+          "#pragma HLS ARRAY_PARTITION variable=call type=cyclic dim=1 factor=16",
+          "#pragma HLS ARRAY_PARTITION variable=T type=cyclic dim=1 factor=16",
+          "#pragma HLS ARRAY_PARTITION variable=X type=cyclic dim=1 factor=2",
+          "#pragma HLS ARRAY_PARTITION variable=S type=cyclic dim=1 factor=16"
+        ],
+        "pareto_pragmas": [
+          "#pragma HLS ARRAY_PARTITION variable=put type=cyclic dim=1 factor=16",
+          "#pragma HLS ARRAY_PARTITION variable=call type=cyclic dim=1 factor=16",
+          "#pragma HLS ARRAY_PARTITION variable=T type=cyclic dim=1 factor=8",
+          "#pragma HLS ARRAY_PARTITION variable=X type=cyclic dim=1 factor=8",
+          "#pragma HLS ARRAY_PARTITION variable=S type=cyclic dim=1 factor=16"
+        ]
+      }
+    ],
+    "qwen7b_chaining": [
+      {
+        "algo": "fir_filter",
+        "success": true,
+        "type_match": 0.667,
+        "pfs": 0.686,
+        "llm_pragmas": [
+          "#pragma HLS ARRAY_PARTITION variable=coeffs type=cyclic dim=1 factor=8",
+          "#pragma HLS ARRAY_PARTITION variable=output type=cyclic dim=1 factor=16",
+          "#pragma HLS ARRAY_PARTITION variable=input type=cyclic dim=1 factor=1",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=4"
+        ],
+        "pareto_pragmas": [
+          "#pragma HLS ARRAY_PARTITION variable=output type=cyclic dim=1 factor=16",
+          "#pragma HLS ARRAY_PARTITION variable=coeffs type=cyclic dim=1 factor=8",
+          "#pragma HLS ARRAY_PARTITION variable=input type=cyclic dim=1 factor=16",
+          "#pragma HLS PIPELINE",
+          "#pragma HLS UNROLL factor=16"
+        ]
+      },
+      {
+        "algo": "dct",
+        "success": true,
+        "type_match": 1.0,
+        "pfs": 0.6,
+        "llm_pragmas": [
+          "#pragma HLS ARRAY_PARTITION variable=output type=cyclic dim=1 factor=8",
+          "#pragma HLS ARRAY_PARTITION variable=input type=cyclic dim=1 factor=1",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=4",
+          "#pragma HLS PIPELINE OFF"
+        ],
+        "pareto_pragmas": [
+          "#pragma HLS ARRAY_PARTITION variable=output type=cyclic dim=1 factor=1",
+          "#pragma HLS ARRAY_PARTITION variable=input type=cyclic dim=1 factor=16",
+          "#pragma HLS PIPELINE",
+          "#pragma HLS UNROLL factor=1",
+          "#pragma HLS PIPELINE OFF"
+        ]
+      },
+      {
+        "algo": "gemm_ncubed",
+        "success": true,
+        "type_match": 1.0,
+        "pfs": 1.0,
+        "llm_pragmas": [],
+        "pareto_pragmas": []
+      },
+      {
+        "algo": "stencil_stencil2d",
+        "success": true,
+        "type_match": 1.0,
+        "pfs": 0.6,
+        "llm_pragmas": [
+          "#pragma HLS ARRAY_PARTITION variable=filter type=cyclic dim=1 factor=4",
+          "#pragma HLS ARRAY_PARTITION variable=sol type=cyclic dim=1 factor=8",
+          "#pragma HLS ARRAY_PARTITION variable=orig type=cyclic dim=1 factor=4",
+          "#pragma HLS PIPELINE OFF",
+          "#pragma HLS UNROLL factor=4"
+        ],
+        "pareto_pragmas": [
+          "#pragma HLS ARRAY_PARTITION variable=filter type=cyclic dim=1 factor=8",
+          "#pragma HLS ARRAY_PARTITION variable=sol type=cyclic dim=1 factor=8",
+          "#pragma HLS ARRAY_PARTITION variable=orig type=cyclic dim=1 factor=8",
+          "#pragma HLS PIPELINE",
+          "#pragma HLS UNROLL factor=8"
+        ]
+      },
+      {
+        "algo": "black_scholes",
+        "success": true,
+        "type_match": 0.667,
+        "pfs": 0.857,
+        "llm_pragmas": [
+          "#pragma HLS ARRAY_PARTITION variable=put type=cyclic dim=1 factor=8",
+          "#pragma HLS ARRAY_PARTITION variable=call type=cyclic dim=1 factor=16",
+          "#pragma HLS ARRAY_PARTITION variable=T type=cyclic dim=1 factor=16",
+          "#pragma HLS ARRAY_PARTITION variable=X type=cyclic dim=1 factor=2",
+          "#pragma HLS ARRAY_PARTITION variable=S type=cyclic dim=1 factor=16"
+        ],
+        "pareto_pragmas": [
+          "#pragma HLS ARRAY_PARTITION variable=put type=cyclic dim=1 factor=16",
+          "#pragma HLS ARRAY_PARTITION variable=call type=cyclic dim=1 factor=16",
+          "#pragma HLS ARRAY_PARTITION variable=T type=cyclic dim=1 factor=8",
+          "#pragma HLS ARRAY_PARTITION variable=X type=cyclic dim=1 factor=8",
+          "#pragma HLS ARRAY_PARTITION variable=S type=cyclic dim=1 factor=16"
+        ]
+      }
+    ],
+    "deepseek_oneshot": [
+      {
+        "algo": "fir_filter",
+        "success": false
+      },
+      {
+        "algo": "dct",
+        "success": false
+      },
+      {
+        "algo": "gemm_ncubed",
+        "success": false
+      },
+      {
+        "algo": "stencil_stencil2d",
+        "success": false
+      },
+      {
+        "algo": "black_scholes",
+        "success": false
+      }
+    ],
+    "best_of_n": [
+      {
+        "algo": "fir_filter",
+        "success": false
+      },
+      {
+        "algo": "dct",
+        "success": false
+      },
+      {
+        "algo": "gemm_ncubed",
+        "success": false
+      },
+      {
+        "algo": "stencil_stencil2d",
+        "success": false
+      },
+      {
+        "algo": "black_scholes",
+        "success": false
+      }
+    ]
+  }
+}

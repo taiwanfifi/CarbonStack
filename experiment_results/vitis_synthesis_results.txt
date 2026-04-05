@@ -1,0 +1,47 @@
+Vitis HLS v2025.2 Synthesis Results
+====================================
+Device: xcvu9p-flga2104-2-i (Virtex UltraScale+)
+Clock: 10ns (100MHz target)
+Date: 2026-04-04
+
+=== FIR Filter (128-tap, N=128) ===
+  Variant      | Latency | LUT    | DSP | FF    | Speedup
+  worst        | 2050    | 352    | 3   | 79    | 1.0x (baseline)
+  LLM (7B)     | 1028    | 1672   | 6   | 280   | 2.0x
+  Pareto       | 64      | 33125  | 93  | 11170 | 32.0x
+
+=== GEMM (32x32 matrix multiply) ===
+  worst        | 67649   | 258    | 3   | 94    | 1.0x
+  LLM-style    | 16387   | 1693   | 6   | 584   | 4.1x
+
+=== Stencil 2D (32x32, 3x3 kernel) ===
+  worst        | 8191    | 455    | 3   | 87    | 1.0x
+  LLM-style    | 4502    | 677    | 6   | 268   | 1.8x
+
+=== DCT (8x8) ===
+  worst        | 537     | 346    | 3   | 81    | 1.0x
+  LLM-style    | 10      | 480    | 24  | 11    | 53.7x
+
+=== AES Encrypt (simplified) ===
+  worst        | 18      | 157    | 0   | 18    | 1.0x
+  LLM-style    | 11      | 22117  | 0   | 135   | 1.6x
+
+=== KMeans (64 points, 4 clusters, 3D) ===
+  worst        | 770     | 719    | 3   | 206   | 1.0x
+  LLM-style    | 67      | 1216   | 36  | 121   | 11.5x
+
+=== Histogram (1024 inputs, 256 bins) ===
+  worst        | 258     | 60     | 0   | 11    | 1.0x
+  LLM-style    | 1026    | 8387   | 0   | 16399 | 0.25x (WORSE)
+
+=== Summary ===
+  7 kernels tested with worst vs LLM-style pragmas
+  Average speedup (excluding histogram): 12.5x
+  Median speedup: 2.9x
+  Best case: DCT 53.7x
+  Worst case: Histogram 0.25x (complete partition on 256-bin array = resource explosion)
+
+  Note: histogram_opt used ARRAY_PARTITION complete on 256-element array,
+  which caused massive LUT/FF overhead. This shows LLM correctly identifies
+  the optimization direction but sometimes picks parameters too aggressively.
+  A constrained decoding (limit partition to arrays < 32 elements) would fix this.

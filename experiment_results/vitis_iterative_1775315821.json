@@ -1,0 +1,116 @@
+{
+  "fir_worst": [
+    {
+      "round": 0,
+      "type": "baseline",
+      "metrics": {
+        "errors": [
+          "ERROR: HLS Tcl script does not exist: /tmp/run_r0.tcl"
+        ]
+      }
+    },
+    {
+      "round": 1,
+      "type": "initial",
+      "metrics": {
+        "errors": [
+          "ERROR: HLS Tcl script does not exist: /tmp/run_r1.tcl"
+        ]
+      }
+    },
+    {
+      "round": 2,
+      "type": "refined",
+      "metrics": {
+        "errors": [
+          "ERROR: HLS Tcl script does not exist: /tmp/run_r2.tcl"
+        ]
+      }
+    },
+    {
+      "round": 3,
+      "type": "refined",
+      "metrics": {
+        "errors": [
+          "ERROR: HLS Tcl script does not exist: /tmp/run_r3.tcl"
+        ]
+      }
+    }
+  ],
+  "gemm": [
+    {
+      "round": 0,
+      "type": "baseline",
+      "metrics": {
+        "errors": [
+          "ERROR: HLS Tcl script does not exist: /tmp/run_r0.tcl"
+        ]
+      }
+    },
+    {
+      "round": 1,
+      "type": "initial",
+      "metrics": {
+        "errors": [
+          "ERROR: HLS Tcl script does not exist: /tmp/run_r1.tcl"
+        ]
+      }
+    },
+    {
+      "round": 2,
+      "type": "refined",
+      "metrics": {
+        "errors": [
+          "ERROR: HLS Tcl script does not exist: /tmp/run_r2.tcl"
+        ]
+      }
+    },
+    {
+      "round": 3,
+      "type": "refined",
+      "metrics": {
+        "errors": [
+          "ERROR: HLS Tcl script does not exist: /tmp/run_r3.tcl"
+        ]
+      }
+    }
+  ],
+  "dct8": [
+    {
+      "round": 0,
+      "type": "baseline",
+      "metrics": {
+        "errors": [
+          "ERROR: HLS Tcl script does not exist: /tmp/run_r0.tcl"
+        ]
+      }
+    },
+    {
+      "round": 1,
+      "type": "initial",
+      "metrics": {
+        "errors": [
+          "ERROR: HLS Tcl script does not exist: /tmp/run_r1.tcl"
+        ]
+      }
+    },
+    {
+      "round": 2,
+      "type": "refined",
+      "metrics": {
+        "errors": [
+          "ERROR: HLS Tcl script does not exist: /tmp/run_r2.tcl"
+        ]
+      }
+    },
+    {
+      "round": 3,
+      "type": "refined",
+      "metrics": {
+        "errors": [
+          "ERROR: HLS Tcl script does not exist: /tmp/run_r3.tcl"
+        ]
+      }
+    }
+  ]
+}

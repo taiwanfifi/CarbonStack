@@ -1,0 +1,205 @@
+{
+  "method": "cc",
+  "model": "qwen2.5-coder:7b",
+  "seed": 42,
+  "total": 18,
+  "passed": 14,
+  "results": [
+    {
+      "pid": "p03161",
+      "success": true,
+      "src_time": 0.003641843795776367,
+      "opt_time": 0.003660917282104492,
+      "speedup": 0.9947899706935851,
+      "test_pass": "5/5",
+      "src_code": "#include <bits/stdc++.h>\n\nusing namespace std;\n\n\n\nint main() {\n\n\tint n,k;\n\n\tcin>>n>>k;\n\n\tvector<int>arr(n+1);\n\n\tfor(int i=1;i<=n;i++){\n\n\t\tcin>>arr[i];\n\n\t}\n\n\tvector<int>dp(n+1,INT_MAX);\n\n\tdp[1]=0;\n\n\tfor(int i=2;i<=n;i++){\n\n\t\tfor(int j=1;i-j>0&&j<=k;j++){\n\n\t\t\tif(dp[i-j]!=INT_MAX)dp[i]=min(dp[i],dp[i-j]+abs(arr[i]-arr[i-j]));\n\n\t\t}\n\n\t}\n\n\tcout<<dp[n]<<endl;\n\n\treturn 0;\n\n}",
+      "opt_code": "#include <climits>\n#include <iostream>\n#include <vector>\n#include <algorithm>\n#include <random>\n#include <chrono>\n#include <cmath>\n#include <numeric>\n#include <string>\n#include <unordered_map>\n#include <unordered_set>\n#include <memory>\n#include <functional>\n#include <set>\n#include <map>\n#include <queue>\n#include <stack>\n#include <deque>\n#include <list>\n#include <bitset>\n#include <cassert>\n#include <cstring>\n#include <iomanip>\n#include <sstream>\n\nusing namespace std;\n\nint main() {\n    int n, k;\n    cin >> n >> k;\n\n    int arr[n + 1];\n    for (int i = 1; i <= n; i++) {\n        cin >> arr[i];\n    }\n\n    int dp[n + 1];\n    fill(dp, dp + n + 1, INT_MAX);\n    dp[1] = 0;\n\n    for (int i = 2; i <= n; i++) {\n        for (int j = 1; i - j > 0 && j <= k; j++) {\n            if (dp[i - j] != INT_MAX) {\n                dp[i] = min(dp[i], dp[i - j] + abs(arr[i] - arr[i - j]));\n            }\n        }\n    }\n\n    cout << dp[n] << endl;\n\n    return 0;\n}",
+      "first_stdin": "3 1\n0 59 10\n",
+      "validation_cases_count": 5
+    },
+    {
+      "pid": "p03161",
+      "success": true,
+      "src_time": 0.003122091293334961,
+      "opt_time": 0.0034477710723876953,
+      "speedup": 0.9055390360279372,
+      "test_pass": "5/5",
+      "src_code": "#include<iostream>\n\n#include<cstdio>\n\n#include<cmath>\n\n#include<cstring>\n\nusing namespace std;\n\nconst int N=100005;\n\nint f[N],a[N];\n\nint main()\n\n{\n\n\tint n,k;\n\n\tscanf(\"%d%d\",&n,&k);\n\n\tmemset(f,0x3f,sizeof(f));\n\n\tfor(int i=1;i<=n;i++) scanf(\"%d\",&a[i]);\n\n\tf[1]=0;\n\n\tfor(int i=2;i<=n;i++){\n\n\t\tfor(int j=1;j<=k;j++){\n\n\t\t\tif(i-j>=1) f[i]=min(f[i],f[i-j]+abs(a[i]-a[i-j]));\n\n\t\t}\n\n\t}\n\n\tprintf(\"%d\\n\",f[n]);\n\n}",
+      "opt_code": "#include <cstring>\n#include<iostream>\n#include<cstdio>\n#include<cmath>\nusing namespace std;\n\nconst int N=100005;\nint f[N],a[N];\n\nint main() {\n    int n,k;\n    scanf(\"%d%d\",&n,&k);\n    memset(f,0x3f,sizeof(f));\n    for(int i=1;i<=n;i++) scanf(\"%d\",&a[i]);\n    f[1]=0;\n    for(int i=2;i<=n;i++){\n        for(int j=1;j<=k;j++){\n            if(i-j>=1) f[i]=min(f[i],f[i-j]+abs(a[i]-a[i-j]));\n        }\n    }\n    printf(\"%d\\n\",f[n]);\n}",
+      "first_stdin": "3 1\n0 59 10\n",
+      "validation_cases_count": 5
+    },
+    {
+      "pid": "p00431",
+      "success": false,
+      "fail_reason": "cc_no_output",
+      "src_code": "#include <vector>\n\n#include <iostream>\n\n#include <algorithm>\n\n \n\nusing namespace std;\n\n\n\nint N, A, B, used[100], rings[100]; vector<int> G[100];\n\n \n\nint rec(int pos)\n\n{\n\n    used[pos] = true; int ret = 1;\n\n     \n\n    for(int i = 0; i < rings[pos]; i++)\n\n    {\n\n        if(!used[G[pos][i]])\n\n        {\n\n            ret = max(ret, rec(G[pos][i]) + 1);\n\n        }\n\n    }\n\n     \n\n    used[pos] = false;\n\n     \n\n    return ret;\n\n}\n\n \n\nint main()\n\n{\n\n    int N, A, B;\n\n     \n\n    while(true)\n\n    {\n\n        scanf(\"%d\", &N);\n\n         \n\n        if(N == 0) { break; }\n\n \n\n        for(int i = 0; i < 100; i++)\n\n        {\n\n            used[i] = false;\n\n            rings[i] = 0;\n\n            G[i].clear();\n\n        }\n\n     \n\n        for(int i = 0; i < N; i++)\n\n        {\n\n            scanf(\"%d\", &A); A--;\n\n            scanf(\"%d\", &B); B--;\n\n         \n\n            G[A].push_back(B);\n\n            G[B].push_back(A);\n\n        }\n\n         \n\n        for(int i = 0; i < 100; i++)\n\n        {\n\n            rings[i] = G[i].size();\n\n        }\n\n         \n\n        int nodes = 0;\n\n         \n\n        for(int i = 0; i < 100; i++)\n\n        {\n\n            if(rings[i])\n\n            {\n\n                nodes++;\n\n            }\n\n        }\n\n     \n\n        int ret = 0;\n\n     \n\n        for(int i = 0; i < 100; i++)\n\n        {\n\n            ret = max(ret, rec(i));\n\n                 \n\n            if(ret == nodes) { break; }\n\n        }\n\n         \n\n        printf(\"%d\\n\", ret);\n\n    }\n\n     \n\n    return 0;\n\n}",
+      "first_stdin": "7\n2 3\n3 4\n1 4\n2 7\n5 9\n6 7\n1 7\n6\n1 3\n2 3\n3 4\n4 5\n1 5\n2 6\n7\n1 3\n2 4\n3 5\n4 6\n6 7\n2 3\n4 7\n0\n"
+    },
+    {
+      "pid": "p03161",
+      "success": true,
+      "src_time": 0.0035898685455322266,
+      "opt_time": 0.004141092300415039,
+      "speedup": 0.8668892855086648,
+      "test_pass": "5/5",
+      "src_code": "#include <bits/stdc++.h>\n\nusing namespace std;\n\ntypedef long long ll;\n\ntypedef long long int lli;\n\ntypedef long double ld;\n\nconst int oo = 1e9;\n\nconst int mod = 1e9+9;\n\n/*ll gcd(ll x, ll y){return (y ? gcd(y, x%y) : x); }\n\n*ll lcm(ll x, ll y){return x*(y/gcd(x,y));}\n\n*void exEuclid(int a, int b){\n\n\tif(b==0){x = 1; y=0; d=a; return ;}\n\n\texEuclid(b, a%b);\n\n\tint x1=y;\n\n\tint y1=x-(a/b)*y;\n\n\tx=x1;\n\n\ty=y1;\n\n} \n\n* */\n\n//===========================================================//\n\nconst int nax = 1e5+103;\n\nint n, k;\n\nint dp[nax];\n\nint a[nax];\n\nint f(int i){\n\n\tif (i==n-1) return 0;\n\n\tif(dp[i]!=-1) return dp[i];\n\n\tint ans = abs(a[i]-a[i+1])+f(i+1);\n\n\tfor(int j=2; j<=k; j++){\n\n\t\tif(i+j<n) ans = min(ans, abs(a[i]-a[i+j])+f(i+j));\n\n\t}\n\n\treturn dp[i]=ans;\n\n}\n\nint main(){\n\n\tcin>>n>>k;\n\n\tfor(int i=0; i<n; i++) cin>>a[i];\n\n\tmemset(dp, -1, sizeof dp);\n\n\tcout<<f(0)<<endl;\n\n\treturn 0;\n\n}",
+      "opt_code": "#include <cstring>\n#include <iostream>\n#include <vector>\n#include <algorithm>\n#include <random>\n#include <chrono>\n#include <cmath>\n#include <numeric>\n#include <string>\n#include <unordered_map>\n#include <unordered_set>\n#include <memory>\n#include <functional>\n#include <set>\n#include <map>\n#include <queue>\n#include <stack>\n#include <deque>\n#include <list>\n#include <bitset>\n#include <cassert>\n#include <climits>\n#include <iomanip>\n#include <sstream>\n\nusing namespace std;\n\ntypedef long long ll;\n\nconst int oo = 1e9;\nconst int mod = 1e9+9;\n\nint n, k;\nint dp[100010];\nint a[100010];\n\nint f(int i){\n    if (i == n-1) return 0;\n    if(dp[i] != -1) return dp[i];\n    int ans = abs(a[i]-a[i+1]) + f(i+1);\n    for(int j=2; j<=k; j++){\n        if(i+j < n) ans = min(ans, abs(a[i]-a[i+j]) + f(i+j));\n    }\n    return dp[i] = ans;\n}\n\nint main(){\n    cin >> n >> k;\n    for(int i=0; i<n; i++) cin >> a[i];\n    memset(dp, -1, sizeof dp);\n    cout << f(0) << endl;\n    return 0;\n}",
+      "first_stdin": "3 1\n0 59 10\n",
+      "validation_cases_count": 5
+    },
+    {
+      "pid": "p02630",
+      "success": true,
+      "src_time": 0.003078937530517578,
+      "opt_time": 0.0032608509063720703,
+      "speedup": 0.9442129121883454,
+      "test_pass": "5/5",
+      "src_code": "#include <iostream>\n\n#include <stdio.h>\n\n#include<cmath>\n\n#include<cctype>\n\n#include<cstdio>\n\n#include <algorithm>\n\n#include <string.h>\n\n#include<math.h>\n\n#include<map>\n\n#include<bits/stdc++.h>\n\n#include<unordered_map>\n\n#define Maxn 100005\n\n#define ll long long\n\nusing namespace std;\n\n\n\nll sum;\n\nint num[Maxn];\n\nint a[Maxn];\n\nint main(){\n\n\tint n,q,b,c;\n\n\tscanf(\"%d\",&n);\n\n\tsum=0;\n\n\tfor(int i=1;i<=n;i++){\n\n        scanf(\"%d\",&a[i]);\n\n        sum+=a[i];\n\n        num[a[i]]++;//a[i]\u51fa\u73b0\u7684\u6b21\u6570\n\n\t}\n\n    scanf(\"%d\",&q);\n\n\tfor(int i=1;i<=q;i++){\n\n        scanf(\"%d%d\",&b,&c);\n\n        sum+=(c-b)*num[b];\n\n        num[c]+=num[b];\n\n        num[b]=0;\n\n        printf(\"%lld\\n\",sum);\n\n\t}\n\n\treturn 0;\n\n}\n",
+      "opt_code": "#include <iostream>\n\n#define Maxn 100005\n#define ll long long\n\nusing namespace std;\n\nll sum;\nint num[Maxn];\nint a[Maxn];\n\nint main() {\n    int n, q, b, c;\n    scanf(\"%d\", &n);\n    sum = 0;\n    for (int i = 1; i <= n; i++) {\n        scanf(\"%d\", &a[i]);\n        sum += a[i];\n        num[a[i]]++;\n    }\n    scanf(\"%d\", &q);\n    for (int i = 1; i <= q; i++) {\n        scanf(\"%d%d\", &b, &c);\n        sum += (ll)(c - b) * num[b];\n        num[c] += num[b];\n        num[b] = 0;\n        printf(\"%lld\\n\", sum);\n    }\n    return 0;\n}",
+      "first_stdin": "4\n2 2 3 3\n1\n2 4\n3 4\n1 5\n",
+      "validation_cases_count": 5
+    },
+    {
+      "pid": "p03161",
+      "success": true,
+      "src_time": 0.0038928985595703125,
+      "opt_time": 0.0032851696014404297,
+      "speedup": 1.1849916539661804,
+      "test_pass": "5/5",
+      "src_code": "#include <bits/stdc++.h>\n\nusing namespace std;\n\n#define IO ios::sync_with_stdio(false), cin.tie(0)\n\ntypedef long long ll;\n\nconst int maxn = 1e6 + 5;\n\nconst int inf = 0x3f3f3f3f;\n\nll a[maxn];\n\nll dp[maxn];\n\n\n\nint main()\n\n{\n\n    IO;\n\n    int n, k;\n\n    cin >> n >> k;\n\n    for (int i = 1; i <= n; ++i)\n\n        cin >> a[i];\n\n    memset(dp, inf, sizeof(dp));\n\n    dp[1] = 0;\n\n    for (int i = 2; i <= n; ++i)\n\n    {\n\n        for (int j = 1; j <= k; ++j)\n\n        {\n\n            dp[i] = min(dp[i], dp[max(i - j, 1)] + abs(a[i] - a[max(i - j, 1)]));\n\n        }\n\n    }\n\n    cout << dp[n] << endl;\n\n}\n",
+      "opt_code": "#include <iostream>\n#include <vector>\n#include <algorithm>\n#include <random>\n#include <chrono>\n#include <cmath>\n#include <numeric>\n#include <string>\n#include <unordered_map>\n#include <unordered_set>\n#include <memory>\n#include <functional>\n#include <set>\n#include <map>\n#include <queue>\n#include <stack>\n#include <deque>\n#include <list>\n#include <bitset>\n#include <cassert>\n#include <cstring>\n#include <climits>\n#include <iomanip>\n#include <sstream>\n\nusing namespace std;\n\n#define IO ios::sync_with_stdio(false), cin.tie(0)\n\ntypedef long long ll;\n\nconst int maxn = 1e6 + 5;\nconst int inf = 0x3f3f3f3f;\n\nll a[maxn];\nll dp[maxn];\n\nint main() {\n    IO;\n    int n, k;\n    cin >> n >> k;\n    for (int i = 1; i <= n; ++i)\n        cin >> a[i];\n    for (int i = 0; i <= n; ++i)\n        dp[i] = inf;\n    dp[1] = 0;\n    for (int i = 2; i <= n; ++i) {\n        for (int j = 1; j <= k; ++j) {\n            dp[i] = min(dp[i], dp[max(i - j, 1)] + abs(a[i] - a[max(i - j, 1)]));\n        }\n    }\n    cout << dp[n] << endl;\n}",
+      "first_stdin": "3 1\n0 59 10\n",
+      "validation_cases_count": 5
+    },
+    {
+      "pid": "p02946",
+      "success": true,
+      "src_time": 0.0030298233032226562,
+      "opt_time": 0.0032739639282226562,
+      "speedup": 0.9254296533644043,
+      "test_pass": "5/5",
+      "src_code": "#include <iostream>\n\n#include <algorithm>\n\nusing namespace std;\n\nstatic const int LEFT = -1000000;\n\nstatic const int RIGHT = 1000000;\n\nint main() {\n\n    int K, X;\n\n    cin >> K >> X;\n\n    for (int i = max(LEFT, X - K + 1); i <= min(RIGHT, X + K - 1); i++)\n\n        cout << i << \" \";\n\n}",
+      "opt_code": "#include <iostream>\n\nusing namespace std;\n\nstatic const int LEFT = -1000000;\nstatic const int RIGHT = 1000000;\n\nint main() {\n    int K, X;\n    cin >> K >> X;\n\n    for (int i = max(LEFT, X - K + 1); i <= min(RIGHT, X + K - 1); i++)\n        cout << i << \" \";\n\n}",
+      "first_stdin": "11 10\n",
+      "validation_cases_count": 5
+    },
+    {
+      "pid": "p03161",
+      "success": false,
+      "fail_reason": "cc_no_output",
+      "src_code": "#include <bits/stdc++.h>\n\nusing namespace std;\n\n\n\n//  c0 c1 c2 c3 c4 c5 c6\n\n//  a0 a1 a2 a3 a4 a5 a6\n\nconst int tam = 1e5+10;\n\nlong long dp[tam];\n\nlong long h[tam];\n\nint k;\n\nlong long INF = 1e18;\n\n\n\n\n\nint solve( int i  ) {\n\n    if( i <= 1 ) return abs(h[0]-h[i]);\n\n    long long &ans = dp[i];\n\n    if( ans != -1 ) return ans;\n\n    ans = INF;\n\n    for( int j = 1; j <= k; j++ ) {\n\n        if( i-j >= 0 )\n\n            ans = min( ans, solve(i-j) + abs(h[i-j]-h[i]) );\n\n    }\n\n    return ans;\n\n}\n\n\n\nint main() {\n\n    ios_base::sync_with_stdio(false); cin.tie(NULL);\n\n    int n;\n\n    cin >> n >> k;\n\n    for( int i = 0; i < n; i++  ) {\n\n        cin >> h[i];\n\n    } \n\n    // dp[0] = 0;\n\n    // for( int i = 1; i < n; i++ ) {\n\n    //     dp[i] = dp[i-1] + abs(h[i]-h[i-1]);\n\n    //     for( int j = 2; j <= k; j++)\n\n    //     if( j <= i ) {\n\n    //         dp[i] = min( dp[i], dp[i-j] + abs(h[i]-h[i-j]) );\n\n    //     }\n\n    // }\n\n    // cout << dp[n-1] << '\\n';\n\n    memset( dp, -1, sizeof dp );\n\n    cout << solve(n-1) << '\\n';\n\n    return 0;\n\n}",
+      "first_stdin": "3 1\n0 59 10\n"
+    },
+    {
+      "pid": "p03161",
+      "success": false,
+      "fail_reason": "cc_no_output",
+      "src_code": "#define _CRT_SECURE_NO_WARNINGS\n\n#include <bits/stdc++.h>\n\n#include <unordered_map>\n\n#define stop(x) {cout<<x<<endl;exit(0);}\n\n#define all(x) x.begin(),x.end()\n\n#define szz(s) int(s.size())\n\n#define endl '\\n'\n\nint dx[] = { 0, 0, 1, -1, 1, -1, 1, -1 };\n\nint dy[] = { 1, -1, 0, 0, -1, 1, 1, -1 };\n\ntypedef long long ll;\n\nusing namespace std;\n\n\n\nvoid file() {\n\n    ios::sync_with_stdio(0); cin.tie(0); cout.tie(0);\n\n#ifndef ONLINE_JUDGE\n\n    if (freopen(\"input.txt\", \"r\", stdin));\n\n    if (freopen(\"output.txt\", \"w\", stdout));\n\n#endif\n\n}\n\n\n\n\n\n\n\nint main() {\n\n    //file();\n\n\n\n    ll n, m;\n\n    cin >> n >> m;\n\n    vector < ll > v(n);\n\n\n\n    for (auto& e : v)cin >> e;\n\n\n\n    vector < ll > dp(n + 1, 1e11);\n\n\n\n    dp[0] = 0;\n\n\n\n    for (int i = 0; i < n; i++) {\n\n        for (int k = i + 1; k < min(i + m +1, n); k++) {\n\n            dp[k] = min(dp[k], dp[i] + abs(v[i] - v[k]));\n\n        }\n\n    }\n\n\n\n    cout << dp[n-1] << endl;\n\n\n\n        \n\n}",
+      "first_stdin": "3 1\n0 59 10\n"
+    },
+    {
+      "pid": "p04030",
+      "success": true,
+      "src_time": 0.0033311843872070312,
+      "opt_time": 0.003181934356689453,
+      "speedup": 1.0469054398321596,
+      "test_pass": "5/5",
+      "src_code": "#include<bits/stdc++.h>\n\n using namespace std;\n\n#define  ll long long\n\n\n\n int main() {\n\n     string s ;\n\n     cin >> s ;\n\n     string ans =\"\" ;\n\n     for (int i = 0; i < s.size() ; ++i) {\n\n         if(s[i]=='1') ans+=\"1\";\n\n         else if(s[i]=='0') ans+=\"0\";\n\n         else if(ans.size()>=1) ans.pop_back();\n\n     }\n\n     cout<<ans<<endl;\n\n }",
+      "opt_code": "#include <iostream>\n#include <vector>\n#include <algorithm>\n#include <random>\n#include <chrono>\n#include <cmath>\n#include <numeric>\n#include <string>\n#include <unordered_map>\n#include <unordered_set>\n#include <memory>\n#include <functional>\n#include <set>\n#include <map>\n#include <queue>\n#include <stack>\n#include <deque>\n#include <list>\n#include <bitset>\n#include <cassert>\n#include <cstring>\n#include <climits>\n#include <iomanip>\n#include <sstream>\n\nusing namespace std;\n\n#define ll long long\n\nint main() {\n    string s;\n    cin >> s;\n\n    vector<char> answer(s.size());\n    int j = 0;\n\n    for (int i = 0; i < s.size(); ++i) {\n        if (s[i] == '1') answer[j++] = '1';\n        else if (s[i] == '0') answer[j++] = '0';\n        else if (j >= 1) --j;\n    }\n\n    cout << string(answer.begin(), answer.begin() + j) << endl;\n}",
+      "first_stdin": "BB10\n",
+      "validation_cases_count": 5
+    },
+    {
+      "pid": "p00729",
+      "success": false,
+      "fail_reason": "cc_no_output",
+      "src_code": "#define _USE_MATH_DEFINES\n\n#include <algorithm>\n\n#include <cstdio>\n\n#include <functional>\n\n#include <iostream>\n\n#include <cfloat>\n\n#include <climits>\n\n#include <cstring>\n\n#include <cmath>\n\n#include <map>\n\n#include <queue>\n\n#include <set>\n\n#include <sstream>\n\n#include <stack>\n\n#include <string>\n\n#include <time.h>\n\n#include <vector>\n\nusing namespace std;\n\n\n\ntypedef long long ll;\n\ntypedef unsigned long long ull;\n\ntypedef pair<int, int> i_i;\n\ntypedef pair<ll, int> ll_i;\n\ntypedef pair<double, int> d_i;\n\ntypedef pair<ll, ll> ll_ll;\n\ntypedef pair<double, double> d_d;\n\nstruct edge { int u, v; ll w; };\n\n\n\nll MOD = 1000000007;\n\nll _MOD = 1000000009;\n\ndouble EPS = 1e-10;\n\n\n\nint main() {\n\n\tfor (;;) {\n\n\t\tint N, M; cin >> N >> M;\n\n\t\tif (N == 0) break;\n\n\t\tvector< vector<short> > a(M, vector<short>(1300));\n\n\t\tint r; cin >> r;\n\n\t\twhile (r--) {\n\n\t\t\tint t, n, m, s; cin >> t >> n >> m >> s;\n\n\t\t\tm--;\n\n\t\t\ta[m][t] += (s ? 1 : -1);\n\n\t\t}\n\n\t\tvector< vector<short> > s(M, vector<short>(1300));\n\n\t\tfor (int m = 0; m < M; m++)\n\n\t\t\tfor (int t = 1; t < 1300; t++)\n\n\t\t\t\ts[m][t] = s[m][t - 1] + a[m][t - 1];\n\n\t\tint q; cin >> q;\n\n\t\twhile (q--) {\n\n\t\t\tint ts, te, m; cin >> ts >> te >> m;\n\n\t\t\tm--;\n\n\t\t\tint cnt = 0;\n\n\t\t\tfor (int t = ts + 1; t <= te; t++)\n\n\t\t\t\tif (s[m][t]) cnt++;\n\n\t\t\tcout << cnt << endl;\n\n\t\t}\n\n\t}\n\n}",
+      "first_stdin": "6 2\n10\n775 1 1 1\n780 4 2 1\n585 2 1 1\n800 2 1 0\n810 3 1 1\n820 1 1 0\n825 3 1 0\n860 1 1 1\n870 4 2 0\n880 1 1 0\n1\n780 870 1\n13 15\n12\n540 12 13 1\n556 12 13 0\n650 13 15 1\n660 12 15 1\n665 11 13 1\n670 13 15 0\n675 11 13 0\n680 12 15 0\n1000 11 14 1\n1060 12 14 1\n1060 11 14 0\n1080 12 14 0\n3\n540 700 13\n600 1100 15\n1000 1200 11\n1 1\n2\n600 1 1 1\n700 1 1 0\n5\n540 238 1\n550 650 1\n610 620 1\n1133 750 1\n700 800 1\n0 0\n"
+    },
+    {
+      "pid": "p03037",
+      "success": true,
+      "src_time": 0.0037162303924560547,
+      "opt_time": 0.0028781890869140625,
+      "speedup": 1.2911696487740225,
+      "test_pass": "5/5",
+      "src_code": "#include <bits/stdc++.h>\n\nusing namespace std;\n\n#define _GLIBCXX_DEBUG\n\n#define rep(i,n) for(long long i = 0; i < (n); ++i)\n\n#define ll long long\n\n#define P pair<ll,ll>\n\n#define all(v) (v).begin(),(v).end()\n\n\n\nconst ll mod = 1e9+7;\n\nconst ll INF = 1e18;\n\nconst double pi = acos(-1.0);\n\n\n\nint main(void)\n\n{\n\n    ll n, m, cnt=0;\n\n    cin >> n >> m;\n\n    vector<ll> a(200000,0);\n\n    rep(i,m){\n\n        ll l, r;\n\n        cin >> l >> r;\n\n        a[--l]++;\n\n        a[r]--;\n\n    }\n\n    rep(i,200000) a[i+1] += a[i];\n\n    rep(i,200000) if(a[i]>=m) cnt++;\n\n    cout << cnt << endl;\n\n    return 0;\n\n}",
+      "opt_code": "#include <iostream>\n#include <vector>\n#include <algorithm>\n#include <random>\n#include <chrono>\n#include <cmath>\n#include <numeric>\n#include <string>\n#include <unordered_map>\n#include <unordered_set>\n#include <memory>\n#include <functional>\n#include <set>\n#include <map>\n#include <queue>\n#include <stack>\n#include <deque>\n#include <list>\n#include <bitset>\n#include <cassert>\n#include <cstring>\n#include <climits>\n#include <iomanip>\n#include <sstream>\n\nusing namespace std;\n\n#define rep(i,n) for(long long i = 0; i < (n); ++i)\n\n#define ll long long\n\n#define P pair<ll,ll>\n\n#define all(v) (v).begin(),(v).end()\n\nconst ll mod = 1e9+7;\n\nconst ll INF = 1e18;\n\nconst double pi = acos(-1.0);\n\nint counts[1000] = {0};\n\nint main(void)\n{\n    ll n, m, cnt=0;\n    cin >> n >> m;\n    \n    rep(i,m){\n        ll l, r;\n        cin >> l >> r;\n        counts[--l]++;\n        counts[r]--;\n    }\n\n    for(int i = 1; i < 1000; ++i) {\n        counts[i] += counts[i-1];\n    }\n\n    rep(i,1000) if(counts[i]>=m) cnt++;\n\n    cout << cnt << endl;\n\n    return 0;\n}",
+      "first_stdin": "8 3\n3 0\n7 7\n1 1\n",
+      "validation_cases_count": 5
+    },
+    {
+      "pid": "p03796",
+      "success": true,
+      "src_time": 0.003284931182861328,
+      "opt_time": 0.0030350685119628906,
+      "speedup": 1.0823252160251375,
+      "test_pass": "5/5",
+      "src_code": "#include <iostream>\n\n#include <algorithm>\n\n#include <cstdio>\n\n#include <cmath>\n\n#include <cstdlib>\n\n#include <cstring>\n\n#include <climits>\n\n#include <cctype>\n\n#include <map>\n\n#include <list>\n\n#include <stack>\n\n#include <queue>\n\n#include <vector>\n\n#include <set>\n\n#define mem(a,b) memset((a),(b),sizeof(a))\n\nusing namespace std;\n\nconst int INF=0x3f3f3f3f;\n\nconst double PI=acos(-1.0);\n\nconst double eps=1e-12;\n\nconst int MAX=1000000+10;\n\nconst int EDGE=100000+10;//\u8fb9\u7684\u6761\u6570\n\ntypedef long long ll;\n\nconst int mod=1000000000+7;\n\nll mul2(ll a,ll b)\n\n{\n\n\tll ans=0;\n\n\twhile(b)\n\n\t{\n\n\t\tif(b&1)\n\n\t\t{\n\n\t\t\tans=(ans+a)%mod;\n\n\t\t}\n\n\t\ta=(a<<1)%mod;\n\n\t\tb>>=1;\n\n\t}\n\n\treturn ans;\n\n}\n\nint main()\n\n{\n\n\tll n,s,i;\n\n\twhile(~scanf(\"%lld\",&n))\n\n\t{\n\n\t\ts=1;\n\n\t\tfor(i=1;i<=n;i++)\n\n\t\t{\n\n\t\t\ts=mul2(s,i);\n\n\t\t}\n\n\t\tprintf(\"%lld\\n\",s);\n\n\t}\n\n\treturn 0;\n\n}",
+      "opt_code": "#include <cstring>\n#include <iostream>\n#include <cstdio>\n\n#define mem(a,b) memset((a),(b),sizeof(a))\n\nusing namespace std;\n\nconst int INF=0x3f3f3f3f;\nconst double PI=acos(-1.0);\nconst double eps=1e-12;\nconst int MAX=1000000+10;\nconst int EDGE=100000+10;//\u8fb9\u7684\u6761\u6570\ntypedef long long ll;\n\nconst int mod=1000000000+7;\n\nll mul2(ll a,ll b)\n{\n\tll ans=0;\n\twhile(b)\n\t{\n\t\tif(b&1)\n\t\t{\n\t\t\tans=(ans+a)%mod;\n\t\t}\n\t\ta=(a<<1)%mod;\n\t\tb>>=1;\n\t}\n\treturn ans;\n}\n\nint main()\n{\n\tll n,s,i;\n\tscanf(\"%lld\",&n);\n\ts=1;\n\tfor(i=1;i<=n;i++)\n\t{\n\t\ts=mul2(s,i);\n\t}\n\tprintf(\"%lld\\n\",s);\n\treturn 0;\n}",
+      "first_stdin": "46\n",
+      "validation_cases_count": 5
+    },
+    {
+      "pid": "p03161",
+      "success": true,
+      "src_time": 0.0033881664276123047,
+      "opt_time": 0.003164052963256836,
+      "speedup": 1.070831135558737,
+      "test_pass": "5/5",
+      "src_code": "#include <bits/stdc++.h>\n\nusing namespace std;\n\n#define N (int)2e5\n\nint n,k,memo[N],c[N];\n\n\n\nint dp(int curr) {\n\n    if (curr == n) return 0;\n\n    if (curr > n) return 1e9;\n\n    int &sol = memo[curr];\n\n    if (sol != -1) return sol;\n\n    int keep = INT_MAX;\n\n    for (int i = 1 ; i <= k ; i++) {\n\n        keep = min(\n\n            dp(curr + i) + abs(c[curr] - c[curr + i]) ,\n\n            keep\n\n        );\n\n    }\n\n    return sol = keep;\n\n}\n\n\n\nint main() {\n\n    scanf(\"%d%d\" , &n , &k);\n\n    for (int i = 1 ; i <= n ; i++)\n\n        scanf(\"%d\" , &c[i]);\n\n    memset (memo , -1 , sizeof memo);\n\n    printf(\"%d\\n\" , dp(1));\n\n}",
+      "opt_code": "#include <climits>\n#include <cstring>\n#include <iostream>\n#include <vector>\n#include <algorithm>\n#include <random>\n#include <chrono>\n#include <cmath>\n#include <numeric>\n#include <string>\n#include <unordered_map>\n#include <unordered_set>\n#include <memory>\n#include <functional>\n#include <set>\n#include <map>\n#include <queue>\n#include <stack>\n#include <deque>\n#include <list>\n#include <bitset>\n#include <cassert>\n#include <iomanip>\n#include <sstream>\n\nusing namespace std;\n\n#define N (int)2e5\n\nint n, k;\nint memo[N], c[N];\n\nint dp(int curr) {\n    if (curr == n) return 0;\n    if (curr > n) return 1e9;\n    int &sol = memo[curr];\n    if (sol != -1) return sol;\n\n    int keep = INT_MAX;\n    for (int i = 1; i <= k; i++) {\n        keep = min(\n            dp(curr + i) + abs(c[curr] - c[curr + i]),\n            keep\n        );\n    }\n\n    return sol = keep;\n}\n\nint main() {\n    scanf(\"%d%d\", &n, &k);\n    for (int i = 1; i <= n; i++)\n        scanf(\"%d\", &c[i]);\n    memset(memo, -1, sizeof memo);\n    printf(\"%d\\n\", dp(1));\n}",
+      "first_stdin": "3 1\n0 59 10\n",
+      "validation_cases_count": 5
+    },
+    {
+      "pid": "p02802",
+      "success": true,
+      "src_time": 0.0035011768341064453,
+      "opt_time": 0.0033850669860839844,
+      "speedup": 1.0343006057191153,
+      "test_pass": "5/5",
+      "src_code": "#include <iostream>\n\n\n\nusing namespace std;\n\n\n\nint n, k, m, s, ac[1000005],sub[100005],cor,pen;\n\nint main()\n\n{\n\n    cin >> n >> m;\n\n    for(int i = 1; i <= m; ++i)\n\n    {\n\n        int x;\n\n        char y[5];\n\n        cin >> x >> y;\n\n        if(y[0] == 'A')\n\n        {\n\n            ac[x] = true;\n\n        }\n\n        else if(ac[x] == false)\n\n        {\n\n            ++sub[x];\n\n        }\n\n    }\n\n    for(int i = 1; i <= n; ++i)\n\n    {\n\n        if(ac[i] == true)\n\n            ++cor, pen += sub[i];\n\n    }\n\n    cout << cor << ' ' << pen;\n\n    return 0;\n\n}\n",
+      "opt_code": "#include <iostream>\n#include <array>\n\nusing namespace std;\n\nint n, m, s;\narray<bool, 1000005> ac;\narray<int, 1000005> sub;\nint cor, pen;\n\nint main() {\n    cin >> n >> m;\n    for(int i = 1; i <= m; ++i) {\n        int x;\n        char y[5];\n        cin >> x >> y;\n        if(y[0] == 'A') {\n            ac[x] = true;\n        } else if(!ac[x]) {\n            ++sub[x];\n        }\n    }\n    for(int i = 1; i <= n; ++i) {\n        if(ac[i])\n            ++cor, pen += sub[i];\n    }\n    cout << cor << ' ' << pen;\n    return 0;\n}",
+      "first_stdin": "100000 3\n7777 AC\n7777 BC\n7777 BC\n",
+      "validation_cases_count": 5
+    },
+    {
+      "pid": "p02898",
+      "success": true,
+      "src_time": 0.0034377574920654297,
+      "opt_time": 0.0033829212188720703,
+      "speedup": 1.0162097399393897,
+      "test_pass": "5/5",
+      "src_code": "#include <bits/stdc++.h>\n\n#define Mod 1000000007\n\n#define eps 1e-6\n\n#define ll long long\n\n#define INF 0x3f3f3f3f\n\n#define MEM(x, y) memset(x, y, sizeof(x))\n\n#define Maxn 1000000 + 10\n\nusing namespace std;\n\nint n;\n\nint h;\n\nint result = 0;\n\nint main()\n\n{\n\n    cin >> n >> h;\n\n    while (n--)\n\n    {\n\n        int x;\n\n        cin >> x;\n\n        if (x >= h)\n\n            result++;\n\n    }\n\n    cout << result << endl;\n\n}\n",
+      "opt_code": "#include <cstring>\n#include <iostream>\n#include <vector>\n#include <algorithm>\n#include <random>\n#include <chrono>\n#include <cmath>\n#include <numeric>\n#include <string>\n#include <unordered_map>\n#include <unordered_set>\n#include <memory>\n#include <functional>\n#include <set>\n#include <map>\n#include <queue>\n#include <stack>\n#include <deque>\n#include <list>\n#include <bitset>\n#include <cassert>\n#include <climits>\n#include <iomanip>\n#include <sstream>\n\n#define Mod 1000000007\n\n#define eps 1e-6\n\n#define ll long long\n\n#define INF 0x3f3f3f3f\n\n#define MEM(x, y) memset(x, y, sizeof(x))\n\n#define Maxn 1000000 + 10\n\nusing namespace std;\n\nint n;\n\nint h;\n\nint input_values[Maxn];\n\nint result = 0;\n\nint main()\n\n{\n\n    cin >> n >> h;\n\n    for (int i = 0; i < n; ++i)\n\n        cin >> input_values[i];\n\n    for (int i = 0; i < n; ++i)\n\n        if (input_values[i] >= h)\n\n            result++;\n\n    cout << result << endl;\n\n}",
+      "first_stdin": "5 0\n100 71 476 467 500\n",
+      "validation_cases_count": 5
+    },
+    {
+      "pid": "p00431",
+      "success": true,
+      "src_time": 0.0036280155181884766,
+      "opt_time": 0.003303050994873047,
+      "speedup": 1.0983831384437708,
+      "test_pass": "5/5",
+      "src_code": "#include <cstring>\n\n#include <iostream>\n\n#include <algorithm>\n\n\n\nusing namespace std;\n\n\n\nint N, A, B, rings[100], G[100][100]; bool used[100];\n\n\n\nint rec(int pos)\n\n{\n\n\tint ret = 1; used[pos] = true;\n\n\n\n\tfor(int i = 0; i < rings[pos]; i++)\n\n\t{\n\n\t\tint r = G[pos][i];\n\n\t\t\n\n\t\tif(!used[r])\n\n\t\t{\n\n\t\t\tret = max(ret, rec(r) + 1);\n\n\t\t}\n\n\t}\n\n\n\n\tused[pos] = false;\n\n\n\n\treturn ret;\n\n}\n\n\n\nint main()\n\n{\n\n\tint N, A, B;\n\n\n\n\twhile(true)\n\n\t{\n\n\t\tscanf(\"%d\", &N);\n\n \n\n\t\tif(N == 0) { break; }\n\n\n\n\t\tfor(int i = 0; i < 100; i++)\n\n\t\t{\n\n\t\t\tused[i] = false;\n\n\t\t\trings[i] = 0;\n\n\t\t}\n\n\n\n\t\tfor(int i = 0; i < N; i++)\n\n\t\t{\n\n\t\t\tscanf(\"%d\", &A); A--;\n\n\t\t\tscanf(\"%d\", &B); B--;\n\n\n\n\t\t\tG[A][rings[A]] = B; rings[A]++;\n\n\t\t\tG[B][rings[B]] = A; rings[B]++;\n\n\t\t}\n\n\n\n\t\tint nodes = 0;\n\n\n\n\t\tfor(int i = 0; i < 100; i++)\n\n\t\t{\n\n\t\t\tif(rings[i])\n\n\t\t\t{\n\n\t\t\t\tnodes++;\n\n\t\t\t}\n\n\t\t}\n\n\n\n\t\tint ret = 0;\n\n\n\n\t\tfor(int i = 0; i < 100; i++)\n\n\t\t{\n\n\t\t\tret = max(ret, rec(i));\n\n\n\n \t\t\tif(ret == nodes) break;\n\n\t\t}\n\n \n\n\t\tprintf(\"%d\\n\", ret);\n\n\t}\n\n\n\n\treturn 0;\n\n}",
+      "opt_code": "#include <cstring>\n#include <iostream>\nusing namespace std;\n\nint N, A, B, rings[100], G[100][100];\nbool used[100];\n\nint rec(int pos) {\n    int ret = 1;\n    used[pos] = true;\n\n    for (int i = 0; i < rings[pos]; i++) {\n        int r = G[pos][i];\n        if (!used[r]) {\n            ret = max(ret, rec(r) + 1);\n        }\n    }\n\n    used[pos] = false;\n    return ret;\n}\n\nint main() {\n    while (true) {\n        scanf(\"%d\", &N);\n        if (N == 0) break;\n\n        for (int i = 0; i < 100; i++) {\n            used[i] = false;\n            rings[i] = 0;\n        }\n\n        for (int i = 0; i < N; i++) {\n            scanf(\"%d\", &A); A--;\n            scanf(\"%d\", &B); B--;\n            G[A][rings[A]] = B; rings[A]++;\n            G[B][rings[B]] = A; rings[B]++;\n        }\n\n        int nodes = 0;\n        for (int i = 0; i < 100; i++) {\n            if (rings[i]) {\n                nodes++;\n            }\n        }\n\n        int ret = 0;\n        for (int i = 0; i < 100; i++) {\n            ret = max(ret, rec(i));\n            if (ret == nodes) break;\n        }\n\n        printf(\"%d\\n\", ret);\n    }\n\n    return 0;\n}",
+      "first_stdin": "7\n2 3\n3 4\n1 4\n2 7\n5 9\n6 7\n1 7\n6\n1 3\n2 3\n3 4\n4 5\n1 5\n2 6\n7\n1 3\n2 4\n3 5\n4 6\n6 7\n2 3\n4 7\n0\n",
+      "validation_cases_count": 5
+    },
+    {
+      "pid": "p02792",
+      "success": true,
+      "src_time": 0.003162860870361328,
+      "opt_time": 0.0035278797149658203,
+      "speedup": 0.8965330810299385,
+      "test_pass": "5/5",
+      "src_code": "#include <bits/stdc++.h>\n\nusing namespace std;\n\n\n\n//count1...\u5148\u982d\uff1d\uff1d\u672b\u5c3e, count2...\u5148\u982d\uff01\uff1d\u672b\u5c3e\n\nint count1 = 0, count2 = 0;\n\n\n\n//\u5148\u982d\u3068\u672b\u5c3e\u306e\u5224\u5b9a\n\nbool test1(long long A, long long B)\n\n{\n\n    string a = to_string(A), b = to_string(B);\n\n\n\n    if (a.at(0) == b.at(b.length() - 1) && a.at(a.length() - 1) == b.at(0))\n\n    {\n\n        return true;\n\n    }\n\n\n\n    else\n\n    {\n\n        return false;\n\n    }\n\n}\n\n\n\n//\u5148\u982d\u3068\u672b\u5c3e\u306e\u5224\u5b9a\u30ab\u30a6\u30f3\u30c8\n\nlong long test2(long long A, long long B)\n\n{\n\n    string a = to_string(A), b = to_string(B);\n\n\n\n    if (a.at(0) == b.at(b.length() - 1) && a.at(a.length() - 1) == b.at(0))\n\n    {\n\n\n\n        if (a.at(0) == a.at(a.length() - 1))\n\n        {\n\n            count1++;\n\n        }\n\n\n\n        else\n\n        {\n\n            count2++;\n\n        }\n\n    }\n\n}\n\n\n\nint main()\n\n{\n\n    long long N, ans = 0, count3 = 0;\n\n    cin >> N;\n\n\n\n    if (N < 100)\n\n    {\n\n        for (long long A = 1; A < N + 1; A++)\n\n        {\n\n            for (long long B = 1; B < N + 1; B++)\n\n            {\n\n                if (test1(A, B))\n\n                {\n\n                    ans++;\n\n                }\n\n            }\n\n        }\n\n    }\n\n\n\n    else\n\n    {\n\n\n\n        ans += pow(N / 10, 2) + 8;\n\n\n\n        if (N > (N % 10) * 10)\n\n        {\n\n            for (int j = (N / 10) * 10 + 1; j < N + 1; j++)\n\n            {\n\n                string a = to_string(j);\n\n\n\n                if (a.at(0) == a.at(a.length() - 1))\n\n                {\n\n                    count3++;\n\n                }\n\n\n\n                for (int i = 1; i < N + 1; i++)\n\n                {\n\n                    test2(j, i);\n\n                }\n\n            }\n\n        }\n\n\n\n        ans += (count1 * 2 - count3) + count2 * 2;\n\n    }\n\n\n\n    cout << ans << endl;\n\n}",
+      "opt_code": "#include <array>\n#include <iostream>\n#include <vector>\n#include <algorithm>\n#include <random>\n#include <chrono>\n#include <cmath>\n#include <numeric>\n#include <string>\n#include <unordered_map>\n#include <unordered_set>\n#include <memory>\n#include <functional>\n#include <set>\n#include <map>\n#include <queue>\n#include <stack>\n#include <deque>\n#include <list>\n#include <bitset>\n#include <cassert>\n#include <cstring>\n#include <climits>\n#include <iomanip>\n#include <sstream>\n\nusing namespace std;\n\nint counts[1000] = {0};\nstd::array<double, 1000*1000> C_flat;\n\nbool test1(long long A, long long B) {\n    string a = to_string(A), b = to_string(B);\n    return (a.at(0) == b.at(b.length() - 1) && a.at(a.length() - 1) == b.at(0));\n}\n\nvoid test2(long long A, long long B) {\n    string a = to_string(A), b = to_string(B);\n    if (a.at(0) == b.at(b.length() - 1) && a.at(a.length() - 1) == b.at(0)) {\n        counts[a.at(0) - '0']++;\n    }\n}\n\nint main() {\n    long long N, ans = 0, count3 = 0;\n    cin >> N;\n\n    if (N < 100) {\n        for (long long A = 1; A < N + 1; A++) {\n            for (long long B = 1; B < N + 1; B++) {\n                if (test1(A, B)) {\n                    ans++;\n                }\n            }\n        }\n    } else {\n        ans += pow(N / 10, 2) + 8;\n        if (N > (N % 10) * 10) {\n            for (int j = (N / 10) * 10 + 1; j < N + 1; j++) {\n                string a = to_string(j);\n                if (a.at(0) == a.at(a.length() - 1)) {\n                    count3++;\n                }\n                for (int i = 1; i < N + 1; i++) {\n                    test2(j, i);\n                }\n            }\n        }\n        ans += (counts[0] * 2 - count3) + counts[1] * 2;\n    }\n\n    cout << ans << endl;\n}",
+      "first_stdin": "63\n",
+      "validation_cases_count": 5
+    }
+  ]
+}

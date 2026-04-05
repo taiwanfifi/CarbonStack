@@ -1,0 +1,321 @@
+Deep Dive: 21 failed tasks from GPU 100-run
+================================================================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  TASK 1/21 | p00431 | 60 lines | fail: no_output
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Features: recursion, graph, multi_io
+  Compressed: 60→41 lines
+  Result: ❌ FAIL
+  Diagnosis: code_generated_but_tc_fail
+  LLM calls: 5
+  Round 1 (R1_analyze): prompt=2123ch → resp=1021ch
+  Round 2 (R2_design): prompt=3678ch → resp=969ch
+  Round 3 (R3_implement): prompt=1946ch → resp=842ch
+    → Generated 831 chars of code
+  Round 4 (R4_fix1): prompt=3397ch → resp=1064ch
+  Round 5 (R5_fix2): prompt=3619ch → resp=1082ch
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  TASK 2/21 | p03161 | 33 lines | fail: no_output
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Features: DP
+  Compressed: 33→33 lines
+  Result: ❌ FAIL
+  Diagnosis: code_generated_but_tc_fail
+  LLM calls: 6
+  Round 1 (R1_analyze): prompt=1893ch → resp=932ch
+  Round 2 (R2_design): prompt=3589ch → resp=790ch
+  Round 3 (R3_implement): prompt=1781ch → resp=746ch
+    → Generated 735 chars of code
+  Round 4 (R4_fix1): prompt=1374ch → resp=740ch
+  Round 5 (R5_fix2): prompt=2419ch → resp=713ch
+  Round 6 (R6_pass2): prompt=2392ch → resp=713ch
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  TASK 3/21 | p00431 | 56 lines | fail: no_output
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Features: recursion, graph, multi_io
+  Compressed: 56→41 lines
+  Result: ❌ FAIL
+  Diagnosis: code_generated_but_tc_fail
+  LLM calls: 5
+  Round 1 (R1_analyze): prompt=1953ch → resp=838ch
+  Round 2 (R2_design): prompt=3501ch → resp=1394ch
+  Round 3 (R3_implement): prompt=1825ch → resp=1110ch
+    → Generated 1099 chars of code
+  Round 4 (R4_fix1): prompt=2997ch → resp=1110ch
+  Round 5 (R5_fix2): prompt=2997ch → resp=1140ch
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  TASK 4/21 | p02792 | 72 lines | fail: no_output
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Features: simple
+  Compressed: 72→41 lines
+  Result: ❌ FAIL
+  Diagnosis: code_generated_but_tc_fail
+  LLM calls: 5
+  Round 1 (R1_analyze): prompt=2275ch → resp=914ch
+  Round 2 (R2_design): prompt=3559ch → resp=1119ch
+  Round 3 (R3_implement): prompt=2257ch → resp=1696ch
+    → Generated 1513 chars of code
+  Round 4 (R4_fix1): prompt=3835ch → resp=2022ch
+  Round 5 (R5_fix2): prompt=3909ch → resp=2557ch
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  TASK 5/21 | p03313 | 52 lines | fail: no_output
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Features: simple
+  Compressed: 52→41 lines
+  Result: ❌ FAIL
+  Diagnosis: code_generated_but_tc_fail
+  LLM calls: 5
+  Round 1 (R1_analyze): prompt=2031ch → resp=978ch
+  Round 2 (R2_design): prompt=3635ch → resp=1760ch
+  Round 3 (R3_implement): prompt=1970ch → resp=1267ch
+    → Generated 1256 chars of code
+  Round 4 (R4_fix1): prompt=2407ch → resp=1286ch
+  Round 5 (R5_fix2): prompt=1688ch → resp=1286ch
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  TASK 6/21 | p02946 | 14 lines | fail: no_output
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Features: simple
+  Compressed: 14→14 lines
+  Result: ❌ FAIL
+  Diagnosis: code_generated_but_tc_fail
+  LLM calls: 5
+  Round 1 (R1_analyze): prompt=1543ch → resp=1280ch
+  Round 2 (R2_design): prompt=3878ch → resp=698ch
+  Round 3 (R3_implement): prompt=1428ch → resp=299ch
+    → Generated 288 chars of code
+  Round 4 (R4_fix1): prompt=1677ch → resp=256ch
+  Round 5 (R5_fix2): prompt=1634ch → resp=256ch
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  TASK 7/21 | p03161 | 42 lines | fail: no_output
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Features: DP, macros(8)
+  Compressed: 42→41 lines
+  Result: ❌ FAIL
+  Diagnosis: code_generated_but_tc_fail
+  LLM calls: 5
+  Round 1 (R1_analyze): prompt=2369ch → resp=854ch
+  Round 2 (R2_design): prompt=3511ch → resp=1131ch
+  Round 3 (R3_implement): prompt=2284ch → resp=1090ch
+    → Generated 1079 chars of code
+  Round 4 (R4_fix1): prompt=3401ch → resp=1515ch
+  Round 5 (R5_fix2): prompt=3402ch → resp=1515ch
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  TASK 8/21 | p03161 | 30 lines | fail: no_output
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Features: simple
+  Compressed: 30→30 lines
+  Result: ✅ PASS
+  Diagnosis: ACTUALLY_PASSED
+  LLM calls: 4
+  Round 1 (R1_analyze): prompt=1980ch → resp=960ch
+  Round 2 (R2_design): prompt=3617ch → resp=934ch
+  Round 3 (R3_implement): prompt=1839ch → resp=729ch
+    → Generated 718 chars of code
+  Round 4 (R4_fix1): prompt=1652ch → resp=729ch
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  TASK 9/21 | p02676 | 56 lines | fail: no_output
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Features: recursion, multi_io, macros(14)
+  Compressed: 56→41 lines
+  Result: ✅ PASS
+  Diagnosis: ACTUALLY_PASSED
+  LLM calls: 5
+  Round 1 (R1_analyze): prompt=2188ch → resp=917ch
+  Round 2 (R2_design): prompt=3574ch → resp=725ch
+  Round 3 (R3_implement): prompt=2078ch → resp=560ch
+    → Generated 549 chars of code
+  Round 4 (R4_fix1): prompt=1206ch → resp=597ch
+  Round 5 (R5_fix2): prompt=1520ch → resp=597ch
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  TASK 10/21 | p03796 | 17 lines | fail: no_output
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Features: simple
+  Compressed: 17→17 lines
+  Result: ✅ PASS
+  Diagnosis: ACTUALLY_PASSED
+  LLM calls: 6
+  Round 1 (R1_analyze): prompt=1605ch → resp=1111ch
+  Round 2 (R2_design): prompt=3768ch → resp=767ch
+  Round 3 (R3_implement): prompt=1534ch → resp=367ch
+    → Generated 356 chars of code
+  Round 4 (R4_fix1): prompt=1584ch → resp=389ch
+  Round 5 (R5_fix2): prompt=1560ch → resp=388ch
+  Round 6 (R6_pass2): prompt=1311ch → resp=388ch
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  TASK 11/21 | p02714 | 29 lines | fail: no_output
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Features: macros(4)
+  Compressed: 29→29 lines
+  Result: ✅ PASS
+  Diagnosis: ACTUALLY_PASSED
+  LLM calls: 4
+  Round 1 (R1_analyze): prompt=1880ch → resp=798ch
+  Round 2 (R2_design): prompt=3455ch → resp=818ch
+  Round 3 (R3_implement): prompt=1871ch → resp=649ch
+    → Generated 638 chars of code
+  Round 4 (R4_fix1): prompt=1997ch → resp=1148ch
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  TASK 12/21 | p03161 | 72 lines | fail: no_output
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Features: recursion, DP, multi_io, macros(8)
+  Compressed: 72→41 lines
+  Result: ✅ PASS
+  Diagnosis: ACTUALLY_PASSED
+  LLM calls: 4
+  Round 1 (R1_analyze): prompt=2212ch → resp=791ch
+  Round 2 (R2_design): prompt=3448ch → resp=832ch
+  Round 3 (R3_implement): prompt=2110ch → resp=817ch
+    → Generated 806 chars of code
+  Round 4 (R4_fix1): prompt=1740ch → resp=828ch
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  TASK 13/21 | p02946 | 22 lines | fail: no_output
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Features: simple
+  Compressed: 22→22 lines
+  Result: ❌ FAIL
+  Diagnosis: code_generated_but_tc_fail
+  LLM calls: 4
+  Round 1 (R1_analyze): prompt=1713ch → resp=697ch
+  Round 2 (R2_design): prompt=3354ch → resp=1102ch
+  Round 3 (R3_implement): prompt=1590ch → resp=414ch
+    → Generated 403 chars of code
+  Round 4 (R4_fix1): prompt=2387ch → resp=302ch
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  TASK 14/21 | p03161 | 42 lines | fail: no_output
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Features: DP, macros(7)
+  Compressed: 42→41 lines
+  Result: ❌ FAIL
+  Diagnosis: code_generated_but_tc_fail
+  LLM calls: 5
+  Round 1 (R1_analyze): prompt=2197ch → resp=958ch
+  Round 2 (R2_design): prompt=3621ch → resp=1051ch
+  Round 3 (R3_implement): prompt=2129ch → resp=877ch
+    → Generated 866 chars of code
+  Round 4 (R4_fix1): prompt=3189ch → resp=1333ch
+  Round 5 (R5_fix2): prompt=3220ch → resp=1324ch
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  TASK 15/21 | p03161 | 47 lines | fail: no_output
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Features: DP, macros(11)
+  Compressed: 47→41 lines
+  Result: ✅ PASS
+  Diagnosis: ACTUALLY_PASSED
+  LLM calls: 4
+  Round 1 (R1_analyze): prompt=2280ch → resp=624ch
+  Round 2 (R2_design): prompt=3281ch → resp=1553ch
+  Round 3 (R3_implement): prompt=2215ch → resp=894ch
+    → Generated 883 chars of code
+  Round 4 (R4_fix1): prompt=2241ch → resp=893ch
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  TASK 16/21 | p02676 | 15 lines | fail: no_output
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Features: simple
+  Compressed: 15→15 lines
+  Result: ✅ PASS
+  Diagnosis: ACTUALLY_PASSED
+  LLM calls: 5
+  Round 1 (R1_analyze): prompt=1516ch → resp=975ch
+  Round 2 (R2_design): prompt=3632ch → resp=1186ch
+  Round 3 (R3_implement): prompt=1544ch → resp=435ch
+    → Generated 424 chars of code
+  Round 4 (R4_fix1): prompt=1485ch → resp=446ch
+  Round 5 (R5_fix2): prompt=1369ch → resp=446ch
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  TASK 17/21 | p02898 | 44 lines | fail: no_output
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Features: macros(26)
+  Compressed: 44→41 lines
+  Result: ❌ FAIL
+  Diagnosis: code_generated_but_tc_fail
+  LLM calls: 5
+  Round 1 (R1_analyze): prompt=3062ch → resp=1035ch
+  Round 2 (R2_design): prompt=3680ch → resp=2057ch
+  Round 3 (R3_implement): prompt=4867ch → resp=2081ch
+    → Generated 2070 chars of code
+  Round 4 (R4_fix1): prompt=5030ch → resp=311ch
+  Round 5 (R5_fix2): prompt=2836ch → resp=332ch
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  TASK 18/21 | p03161 | 19 lines | fail: no_output
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Features: DP
+  Compressed: 19→19 lines
+  Result: ✅ PASS
+  Diagnosis: ACTUALLY_PASSED
+  LLM calls: 4
+  Round 1 (R1_analyze): prompt=1750ch → resp=857ch
+  Round 2 (R2_design): prompt=3514ch → resp=967ch
+  Round 3 (R3_implement): prompt=1638ch → resp=546ch
+    → Generated 535 chars of code
+  Round 4 (R4_fix1): prompt=1893ch → resp=1080ch
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  TASK 19/21 | p03796 | 20 lines | fail: no_output
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Features: simple
+  Compressed: 20→20 lines
+  Result: ✅ PASS
+  Diagnosis: ACTUALLY_PASSED
+  LLM calls: 4
+  Round 1 (R1_analyze): prompt=1625ch → resp=969ch
+  Round 2 (R2_design): prompt=3626ch → resp=558ch
+  Round 3 (R3_implement): prompt=1435ch → resp=410ch
+    → Generated 399 chars of code
+  Round 4 (R4_fix1): prompt=1333ch → resp=410ch
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  TASK 20/21 | p03161 | 50 lines | fail: no_output
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Features: DP, macros(17)
+  Compressed: 50→41 lines
+  Result: ✅ PASS
+  Diagnosis: ACTUALLY_PASSED
+  LLM calls: 4
+  Round 1 (R1_analyze): prompt=2297ch → resp=1145ch
+  Round 2 (R2_design): prompt=3802ch → resp=911ch
+  Round 3 (R3_implement): prompt=2136ch → resp=1037ch
+    → Generated 1026 chars of code
+  Round 4 (R4_fix1): prompt=1960ch → resp=1059ch
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  TASK 21/21 | p03313 | 47 lines | fail: no_output
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Features: macros(10)
+  Compressed: 47→41 lines
+  Result: ❌ FAIL
+  Diagnosis: code_generated_but_tc_fail
+  LLM calls: 5
+  Round 1 (R1_analyze): prompt=2232ch → resp=657ch
+  Round 2 (R2_design): prompt=3314ch → resp=1014ch
+  Round 3 (R3_implement): prompt=2094ch → resp=1124ch
+    → Generated 1113 chars of code
+  Round 4 (R4_fix1): prompt=3436ch → resp=1574ch
+  Round 5 (R5_fix2): prompt=3461ch → resp=1644ch
+
+
+================================================================================
+SUMMARY: 21 previously-failed tasks
+================================================================================
+  code_generated_but_tc_fail: 11
+  ACTUALLY_PASSED: 10
+
+Rescued (pass now): 10/21

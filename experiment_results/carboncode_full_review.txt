@@ -1,0 +1,3397 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    CARBONCODE 專案完整審查文件                                ║
+║                    Full Project Review Document                              ║
+║                    Generated: 2026-04-02                                     ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+================================================================================
+                              專案摘要 (Chinese Summary)
+================================================================================
+
+專案名稱：CarbonCode
+目標：用本地 7B LLM (qwen2.5-coder:7b) 自動優化 C++ 程式碼，目標 NeurIPS 2026
+動機：半導體/電信公司需要 air-gapped 環境，不能用 cloud AI
+      - TSMC/MediaTek 等半導體公司有 2nm 製程 IP，絕對不能上雲端
+      - 5G baseband 處理需要 cache-optimized C/C++ (1ms HARQ deadline)
+      - 效能工程師稀缺：$200-400K/年，招聘週期 6 個月
+
+核心方法：
+  1. CC Pipeline (Structured Commitment):
+     R1 分析 (10-dimension scan, sparse activation)
+     → R2 設計 (strategy + code skeleton, commitment forcing)
+     → R3 生成 (with generalized few-shot principles)
+     → R3.5 預檢 (auto-fix common issues: missing includes, braces, bits/stdc++.h)
+     → R4 驗證 (compile + ASan/UBSan + benchmark)
+     → R4.5 語義比對 (validate_output_match: numbers extraction, float tolerance)
+     → R5 修復 (mechanical coupling: 用確定性工具驅動 agent 行為)
+
+  2. Decompose Pipeline (Divide & Conquer):
+     THINK (分析問題、識別最優演算法)
+     → PSEUDOCODE (寫精確偽代碼)
+     → VERIFY (用小例子驗證邏輯)
+     → TRANSLATE (偽代碼→C++, 純翻譯)
+     → CHECK (編譯、運行、比對輸出)
+
+  3. 機械耦合 (Mechanical Coupling):
+     用確定性工具（g++ compiler、AddressSanitizer、UBSan、wall-clock benchmark）
+     驅動 agent 行為，LLM 永遠不自我評判，外部工具做決定
+
+關鍵發現：
+  1. CoT (Chain-of-Thought) 反而傷害效能優化：
+     - GPT-5.2 Matrix Mul: 無 CoT 11.2x → 有 CoT 1.9x (-83%)
+     - 原因：CoT 擴展搜索空間而非收斂，模型「想太多」引入不必要的複雜度
+     - 最佳矩陣乘法優化只是改 loop order (i,k,j)，CoT 加了 threading/SIMD/tiling 反而更慢
+
+  2. 7B 可以翻譯精確 pseudocode，但無法從高層描述直接推導正確演算法
+     - Decompose 對演算法任務有效：prefix sum 從 O(N*Q) → O(N+Q)，1080x 加速
+     - Decompose 對簡單替換任務反而過度設計（char_freq segfault）
+
+  3. PIE 0% pass rate 根因（18/18 全部失敗）：
+     - Bug 1: 單一測試案例驗證（PIE 需要多個 stdin→stdout test case）
+     - Bug 2: timing 輸出 ("Time: X seconds") 干擾 output 比對
+     - Bug 3: exception 被 catch 吃掉，沒有 propagate 到錯誤處理
+
+  4. CC (7B local) vs GPT-5.2 (cloud) Head-to-Head:
+     - CC 贏 3/6 任務 (Matrix Mul 12.7x, String Hist 9.0x, Top-K 2.0x)
+     - GPT-5.2 贏 3/6 任務 (Freq Count 1.4x, Prime Sieve 5.3x, Sort Structs 0.8x)
+     - 本地 7B 可以匹敵雲端前沿模型
+
+目前狀態：PIE 三個 bug 已修 (convert_and_run.py 已更新 multi-test validation)，等待重跑驗證
+PIE baseline: GPT-4 pass@4=69% (3.56x), GPT-3.5+self-play pass@8=87.68% (6.86x)
+
+CarbonBench v2 結果 (10 tasks):
+  - CC pass rate: 5/10 (50%) — 通過: matmul, freq_count, char_freq, branchless, indirect_sort
+  - CC 失敗: AoS→SoA, topk, prefix_sum, list→vec, two_pointer
+  - GPT-5.2 pass rate: 10/10 (100%)
+  - CC 最高加速: 9.4x (char_freq, map→array)
+
+Decompose 補救實驗 (6 tasks):
+  - prefix_sum: 893x (成功！O(N*Q)→O(N+Q))
+  - topk: 2.0x (成功，partial_sort)
+  - matrix_mul: 2.6x (成功但低於 CC 的 5.5x)
+  - list→vec: 0.9x (成功但無加速)
+  - char_freq: 失敗 (segfault)
+  - two_pointer: 失敗 (output mismatch, duplicate handling)
+
+
+================================================================================
+================================================================================
+                          PART 1: CORE PIPELINE CODE
+================================================================================
+================================================================================
+
+
+════════════════════════════════════════════════════════════
+FILE: carboncode/agent/supervisor.py
+PURPOSE: Main CarbonCode optimization pipeline (R1-R5 phases)
+════════════════════════════════════════════════════════════
+
+"""
+CarbonCode Supervisor — Multi-round agent for expert C++ generation.
+
+Pipeline:
+  R1: Analyze (10-dimension scan, sparse activation)
+  R2: Architect (strategy selection with reasoning)
+  R3: Implement (code generation)
+  R3.5: Pre-flight check (auto-fix common issues before compilation)
+  R4: Verify (compile → sanitize → benchmark)
+  R4.5: Output validation (check semantic equivalence with naive)
+  R5: Fix (if verification fails, mechanical coupling)
+  R6: Experience (save insights for future tasks)
+"""
+
+import json
+import os
+import time
+from dataclasses import dataclass, field
+from typing import Optional
+
+from ..llm import ollama
+from ..tools import compiler
+
+
+@dataclass
+class Task:
+    description: str
+    constraints: str = ""
+    target_platform: str = "x86-64"
+    naive_code: str = ""  # If provided, use this as baseline instead of generating
+    stdin_data: str = ""  # If provided, feed this as stdin when running code
+    validation_cases: list = field(default_factory=list)  # [(stdin, expected_out), ...] for multi-test validation
+
+
+@dataclass
+class Analysis:
+    relevant_dimensions: list = field(default_factory=list)
+    findings: dict = field(default_factory=dict)
+    raw: str = ""
+
+
+@dataclass
+class Design:
+    strategy: str = ""
+    data_structures: str = ""
+    reasoning: str = ""
+    raw: str = ""
+
+
+@dataclass
+class Result:
+    task: Task = None
+    analysis: Analysis = None
+    design: Design = None
+    code: str = ""
+    naive_code: str = ""
+    verify_naive: compiler.VerifyResult = None
+    verify_optimized: compiler.VerifyResult = None
+    speedup: float = 0.0
+    rounds: int = 0
+    success: bool = False
+
+
+# ── Dimension Definitions ──
+
+DIMENSIONS = {
+    "D1_data_structure": "Data structure selection: vector vs array vs map vs set, AoS vs SoA, pre-allocation",
+    "D2_concurrency": "Thread safety, atomics, memory ordering, lock-free, false sharing",
+    "D3_simd": "SIMD/vectorization opportunities, data alignment, loop restructuring",
+    "D4_memory": "Allocation strategy, arena/pool/slab, stack vs heap, cache line alignment",
+    "D5_ub": "Undefined behavior: signed overflow, null deref, aliasing, uninitialized vars",
+    "D6_compiler": "Compiler flags, PGO/LTO, builtin hints, constexpr",
+    "D7_embedded": "RTOS patterns, ISR, register access, no-heap constraints",
+    "D8_driver": "Kernel module patterns, platform driver, device tree",
+    "D9_template": "Template metaprogramming, concepts, SFINAE, CRTP",
+    "D10_profiling": "Cache behavior, branch prediction, IPC, memory bandwidth",
+}
+
+
+def run(task: Task, model: str = "qwen2.5-coder:7b", max_fix_rounds: int = 3, n_candidates: int = 1) -> Result:
+    """Execute the full CarbonCode pipeline."""
+    result = Result(task=task)
+    t0 = time.time()
+
+    print(f"\n{'='*60}")
+    print(f"  CarbonCode | {task.description[:50]}...")
+    print(f"{'='*60}")
+
+    # ── R1: Analyze ──
+    print("\n  [R1] Analyzing across 10 dimensions...")
+    analysis = _analyze(task, model)
+    result.analysis = analysis
+    print(f"  → Relevant: {', '.join(analysis.relevant_dimensions)}")
+    for dim, finding in analysis.findings.items():
+        print(f"    {dim}: {finding[:80]}")
+
+    # ── R2: Architect ──
+    print("\n  [R2] Designing optimal strategy...")
+    design = _architect(task, analysis, model)
+    result.design = design
+    print(f"  → Strategy: {design.strategy[:100]}")
+    print(f"  → Data structures: {design.data_structures[:100]}")
+
+    # ── R2.5: Naive baseline for comparison ──
+    if task.naive_code:
+        # Use provided naive code (from benchmark tasks)
+        print("\n  [R2.5] Using provided naive baseline...")
+        naive = task.naive_code
+    else:
+        # Generate naive if not provided
+        print("\n  [R2.5] Generating naive baseline...")
+        naive = _generate_naive(task, model)
+    result.naive_code = naive
+    naive_verify = compiler.compile_and_run(naive, stdin_data=task.stdin_data)
+    result.verify_naive = naive_verify
+    if naive_verify.run_ok:
+        naive_bench = compiler.benchmark(naive, stdin_data=task.stdin_data)
+        result.verify_naive = naive_bench
+        print(f"  → Naive baseline: {naive_bench.benchmark_time:.4f}s")
+    else:
+        print(f"  → Naive baseline failed: {naive_verify.errors[:80]}")
+
+    # ── R3: Implement (best-of-N candidates) ──
+    naive_out = result.verify_naive.output if result.verify_naive else ""
+
+    if n_candidates > 1:
+        print(f"\n  [R3] Generating {n_candidates} candidates, picking best...")
+        candidates = []
+        for ci in range(n_candidates):
+            c = _implement(task, analysis, design, model, naive_output=naive_out)
+            from .supervisor import compiler as _comp
+            from ..tools.preflight import check_and_fix as _cf, validate_output_match as _vm
+            c, _ = _cf(c)
+            v = _comp.compile_and_run(c, stdin_data=task.stdin_data)
+            if v.run_ok and v.sanitizer_clean:
+                b = _comp.benchmark(c, stdin_data=task.stdin_data)
+                out_ok = _vm(result.verify_naive.output, b.output) if result.verify_naive and b.output else True
+                if out_ok:
+                    candidates.append((b.benchmark_time, c))
+                    print(f"    Candidate {ci+1}: {b.benchmark_time:.4f}s ✅")
+                else:
+                    print(f"    Candidate {ci+1}: output mismatch ❌")
+            else:
+                print(f"    Candidate {ci+1}: compile/run fail ❌")
+
+        if candidates:
+            candidates.sort()  # Sort by time (fastest first)
+            code = candidates[0][1]  # Pick fastest
+            print(f"    → Selected fastest: {candidates[0][0]:.4f}s")
+        else:
+            print(f"    → All candidates failed, using last attempt")
+            code = _implement(task, analysis, design, model, naive_output=naive_out)
+    else:
+        print("\n  [R3] Implementing optimized version...")
+        code = _implement(task, analysis, design, model, naive_output=naive_out)
+
+    # ── R3.5: Pre-flight check ──
+    from ..tools.preflight import check_and_fix, validate_output_match
+    code, preflight_issues = check_and_fix(code)
+
+    # Check if generated code preserved the result output (not just timing)
+    if task.naive_code:
+        import re as _re
+        naive_couts = [l.strip() for l in task.naive_code.split('\n')
+                      if 'cout' in l and 'Time' not in l and 'time' not in l
+                      and 'elapsed' not in l and 'chrono' not in l]
+        opt_couts = [l.strip() for l in code.split('\n')
+                    if 'cout' in l and 'Time' not in l and 'time' not in l
+                    and 'elapsed' not in l and 'chrono' not in l]
+        if naive_couts and not opt_couts:
+            # CC forgot to print the result! Inject before "return 0"
+            inject_lines = '\n'.join(f'    {c}' for c in naive_couts)
+            if 'return 0' in code:
+                code = code.replace('return 0', f'{inject_lines}\n    return 0', 1)
+                preflight_issues.append(f"INJECTED {len(naive_couts)} missing cout statement(s)")
+
+    if preflight_issues:
+        print(f"  [R3.5] Pre-flight fixes: {', '.join(preflight_issues[:5])}")
+    result.code = code
+
+    # ── R4: Verify ──
+    print("\n  [R4] Verifying...")
+    verify = compiler.compile_and_run(code, stdin_data=task.stdin_data)
+
+    # ── R5: Fix loop (mechanical coupling) ──
+    fix_round = 0
+    while not verify.run_ok and fix_round < max_fix_rounds:
+        fix_round += 1
+        print(f"\n  [R5] Fix round {fix_round}: {verify.errors[:60]}...")
+        code = _fix(code, verify, task, analysis, model)
+        result.code = code
+        verify = compiler.compile_and_run(code, stdin_data=task.stdin_data)
+
+    # If code runs but sanitizer found issues, try to fix those too
+    if verify.run_ok and not verify.sanitizer_clean and fix_round < max_fix_rounds:
+        for san_fix in range(max_fix_rounds - fix_round):
+            fix_round += 1
+            san_errors = verify.details.get("asan", "") or verify.details.get("ubsan", "") or verify.errors
+            print(f"\n  [R5] Sanitizer fix {san_fix+1}: {str(san_errors)[:60]}...")
+            code = _fix(code, verify, task, analysis, model)
+            result.code = code
+            verify = compiler.compile_and_run(code, stdin_data=task.stdin_data)
+            if verify.sanitizer_clean:
+                break
+
+    result.rounds = fix_round
+
+    if verify.run_ok and verify.sanitizer_clean:
+        print("  → Sanitizer: CLEAN")
+        bench = compiler.benchmark(code, stdin_data=task.stdin_data)
+        result.verify_optimized = bench
+        print(f"  → Optimized: {bench.benchmark_time:.4f}s")
+
+        # ── R4.5: Output validation — STRICT semantic equivalence ──
+        # This is the MOST CRITICAL check. Output mismatch = FAILURE.
+        output_ok = True
+        if result.verify_naive and result.verify_naive.output and bench.output:
+            if not validate_output_match(result.verify_naive.output, bench.output):
+                output_ok = False
+                print("  ❌ Output MISMATCH — semantics changed, entering fix loop...")
+
+                # Try to fix output mismatch (up to 2 more rounds)
+                for sem_fix in range(2):
+                    naive_out = result.verify_naive.output.split('\n')[0]
+                    code = _fix_semantic(code, naive_out, task, model)
+                    result.code = code
+                    verify2 = compiler.compile_and_run(code, stdin_data=task.stdin_data)
+                    if verify2.run_ok:
+                        bench2 = compiler.benchmark(code, stdin_data=task.stdin_data)
+                        if bench2.output and validate_output_match(result.verify_naive.output, bench2.output):
+                            print(f"  ✅ Output fixed in semantic round {sem_fix+1}")
+                            bench = bench2
+                            output_ok = True
+                            break
+                        else:
+                            print(f"  ⚠️ Semantic fix round {sem_fix+1}: still mismatched")
+
+        # ── R4.6: Multi-test-case validation (PIE-style) ──
+        # If task has extra validation cases, verify opt code passes ALL of them.
+        if output_ok and task.validation_cases:
+            print(f"\n  [R4.6] Validating against {len(task.validation_cases)} test cases...")
+            # Compile without sanitizers for speed
+            comp_val = compiler.compile_cpp(code, sanitizers=False)
+            if comp_val.success:
+                tc_pass = 0
+                first_failing_stdin = ""
+                first_failing_expected = ""
+                for tc_idx, (tc_stdin, tc_expected) in enumerate(task.validation_cases):
+                    run_r = compiler.run_binary(comp_val.binary_path, stdin_data=tc_stdin)
+                    if run_r.success and validate_output_match(tc_expected, run_r.stdout):
+                        tc_pass += 1
+                    else:
+                        if not first_failing_stdin:
+                            first_failing_stdin = tc_stdin
+                            first_failing_expected = tc_expected
+                        print(f"    TC{tc_idx}: FAIL — expected [{tc_expected[:40]}] got [{run_r.stdout[:40]}]")
+                print(f"  → Test cases: {tc_pass}/{len(task.validation_cases)}")
+                if tc_pass < len(task.validation_cases) and first_failing_stdin:
+                    output_ok = False
+                    print(f"  ❌ Multi-test FAIL — re-fixing with failing test case...")
+                    # Try fixing using the failing test case as the target
+                    for tc_fix in range(2):
+                        fix_verify = compiler.compile_and_run(code, stdin_data=first_failing_stdin)
+                        # Build a fake VerifyResult that shows what we expected
+                        if fix_verify.run_ok:
+                            # Use semantic fix with the expected output
+                            code = _fix_semantic(code, first_failing_expected.split('\n')[0], task, model)
+                            result.code = code
+                            # Re-validate all test cases
+                            comp_val2 = compiler.compile_cpp(code, sanitizers=False)
+                            if comp_val2.success:
+                                tc_pass2 = 0
+                                for s2, e2 in task.validation_cases:
+                                    r2 = compiler.run_binary(comp_val2.binary_path, stdin_data=s2)
+                                    if r2.success and validate_output_match(e2, r2.stdout):
+                                        tc_pass2 += 1
+                                print(f"  TC fix {tc_fix+1}: {tc_pass2}/{len(task.validation_cases)}")
+                                if tc_pass2 == len(task.validation_cases):
+                                    output_ok = True
+                                    bench = compiler.benchmark(code, stdin_data=task.stdin_data)
+                                    print(f"  ✅ All test cases pass after fix {tc_fix+1}")
+                                    break
+                        else:
+                            break
+
+        if output_ok:
+            if result.verify_naive and result.verify_naive.benchmark_time > 0:
+                result.speedup = result.verify_naive.benchmark_time / bench.benchmark_time
+                print(f"  → Speedup: {result.speedup:.1f}x")
+            result.verify_optimized = bench
+            result.success = True
+        else:
+            print("  ❌ Could not fix output mismatch — REJECTED")
+            result.verify_optimized = bench
+            result.success = False  # Mismatch = failure, not success
+    else:
+        result.verify_optimized = verify
+        print(f"  → FAILED after {fix_round} fix rounds")
+        if verify.errors:
+            print(f"  → Error: {verify.errors[:120]}")
+
+    elapsed = time.time() - t0
+    print(f"\n  {'✅' if result.success else '❌'} Done in {elapsed:.1f}s")
+    print(f"{'='*60}\n")
+
+    return result
+
+
+# ── Internal Pipeline Steps ──
+
+def _analyze(task: Task, model: str) -> Analysis:
+    prompt = f"""You are a C++ performance analysis expert.
+
+TASK: {task.description}
+CONSTRAINTS: {task.constraints}
+TARGET: {task.target_platform}
+
+Analyze this task across these 10 dimensions. For each, state if it's RELEVANT or NOT RELEVANT, and if relevant, what the key consideration is.
+
+{chr(10).join(f'{k}: {v}' for k, v in DIMENSIONS.items())}
+
+Output format (JSON):
+```json
+{{
+  "relevant": ["D1_data_structure", "D5_ub", ...],
+  "findings": {{
+    "D1_data_structure": "key consideration...",
+    ...
+  }}
+}}
+```
+Only include relevant dimensions in findings."""
+
+    resp = ollama.call(prompt, model=model)
+    analysis = Analysis(raw=resp)
+
+    try:
+        # Extract JSON
+        import re
+        m = re.search(r'\{.*\}', resp, re.DOTALL)
+        if m:
+            data = json.loads(m.group())
+            analysis.relevant_dimensions = data.get("relevant", [])
+            analysis.findings = data.get("findings", {})
+    except (json.JSONDecodeError, AttributeError):
+        analysis.relevant_dimensions = ["D1_data_structure"]
+        analysis.findings = {"D1_data_structure": "default analysis"}
+
+    return analysis
+
+
+def _architect(task: Task, analysis: Analysis, model: str) -> Design:
+    findings_text = "\n".join(f"- {k}: {v}" for k, v in analysis.findings.items())
+
+    # Inject hardware cost context
+    from ..dimensions.hardware_cost import get_cost_context
+    hw_context = get_cost_context(task.target_platform)
+
+    prompt = f"""You are a senior C++ performance architect. Choose the SIMPLEST approach that is optimal.
+
+TASK: {task.description}
+CONSTRAINTS: {task.constraints}
+
+{hw_context}
+
+ANALYSIS FINDINGS:
+{findings_text}
+
+IMPORTANT PRINCIPLES:
+- Simpler is faster. A stack-allocated array is faster than std::vector which is faster than std::unordered_map
+- If value range is small and known (e.g., 0-999), use a C array: int counts[1000] — NOT a hash map
+- If size is known at compile time, use stack allocation or std::array — NOT std::vector
+- DO NOT use threading unless the task explicitly requires it — thread overhead often makes things slower
+- Cache-friendly access (sequential, contiguous) beats any algorithm improvement
+- For loop order in matrix ops: i,k,j is cache-friendly, i,j,k is not
+- For sorting: if records are large (>64 bytes), use INDIRECT sort (sort indices, not records) to minimize data movement
+- For search: use std::partial_sort or std::nth_element instead of full sort when only top-K needed
+- For graph BFS: use vector<int> as queue (pre-allocated to N) instead of std::queue, use vector<bool> instead of unordered_set for visited
+- For sieve: use vector<char> (1 byte per element) instead of vector<bool> (bit manipulation overhead)
+- LEAN MODE: If the naive approach is already simple and cache-friendly, do NOT over-engineer
+- STACK SIZE LIMIT: Stack allocation (C arrays on stack) is only safe for < 1MB total. For larger data, use std::vector (heap) with reserve(). 1M ints = 4MB = too big for stack. 1000 ints = 4KB = fine for stack.
+- For sorting large records: use std::sort with indices (indirect sort) to avoid moving large objects
+
+Respond with EXACTLY this format:
+STRATEGY: [1-2 sentences, concrete]
+DATA_STRUCTURES: [exact C++ types, e.g. "int counts[1000]" not "an array"]
+REASONING: [why this beats the naive approach, mention cache/memory]
+CODE_SKELETON: [Write the KEY lines of code that MUST appear in the optimized version.
+  For example, if you want flat array + i-k-j, write:
+  ```
+  double* C_flat = new double[N*N]();
+  for(int i=0; i<N; i++)
+    for(int k=0; k<N; k++)
+      for(int j=0; j<N; j++)
+        C_flat[i*N+j] += A_flat[i*N+k] * B_flat[k*N+j];
+  ```
+  The Implementer MUST use this skeleton as the core of their code.]"""
+
+    resp = ollama.call(prompt, model=model)
+    design = Design(raw=resp)
+
+    # Parse loosely
+    for line in resp.split('\n'):
+        line_lower = line.lower().strip()
+        if line_lower.startswith('strategy') or line_lower.startswith('1.'):
+            design.strategy = line.split(':', 1)[-1].strip() if ':' in line else line
+        elif line_lower.startswith('data') or line_lower.startswith('2.'):
+            design.data_structures = line.split(':', 1)[-1].strip() if ':' in line else line
+        elif line_lower.startswith('reason') or line_lower.startswith('3.'):
+            design.reasoning = line.split(':', 1)[-1].strip() if ':' in line else line
+
+    if not design.strategy:
+        design.strategy = resp[:200]
+
+    return design
+
+
+def _generate_naive(task: Task, model: str) -> str:
+    prompt = f"""Write a simple, straightforward C++ solution for this task.
+Do NOT optimize. Use the most obvious data structures (std::unordered_map, std::vector, etc.).
+Include timing with chrono. Print result and "Time: X.XXX seconds".
+
+TASK: {task.description}
+CONSTRAINTS: {task.constraints}
+
+Complete, compilable C++ program in a ```cpp``` block. Include int main()."""
+
+    resp = ollama.call(prompt, model=model)
+    return ollama.extract_code(resp, "cpp")
+
+
+def _implement(task: Task, analysis: Analysis, design: Design, model: str,
+               naive_output: str = "") -> str:
+    findings = "\n".join(f"- {k}: {v}" for k, v in analysis.findings.items())
+
+    # Tell the LLM EXACTLY what output to preserve
+    output_requirement = ""
+
+    # Few-shot example for common optimization patterns
+    few_shot = """
+OPTIMIZATION PRINCIPLES (apply the relevant ones):
+- If value range is small and known, a fixed-size array beats any hash table
+- If memory access is non-sequential (jumping around), reorganize data to be sequential
+- If only a partial result is needed (top-K, first-N), avoid computing the full result
+- Prefer stack allocation over heap for data smaller than 1MB
+- Sequential (stride-1) memory access is 10-100x faster than random access
+- The innermost loop should access memory sequentially (array[i] not array[i*stride])
+- Pre-compute values that are used repeatedly inside loops
+- Minimize the number of memory allocations inside loops (allocate once before the loop)
+"""
+    if naive_output:
+        import re
+        meaningful = [l for l in naive_output.strip().split('\n')
+                     if not re.match(r'(?i)\s*(time|elapsed)', l.strip())]
+        if meaningful:
+            output_requirement = f"""
+MANDATORY OUTPUT — READ CAREFULLY:
+Your program MUST print EXACTLY: {meaningful[0]}
+(This is the FIRST non-timing line of the original program's output.)
+
+To ensure this, compute the SAME values as the original and print them
+using the SAME cout statement. DO NOT change what is printed."""
+
+    # Also extract print statements from naive code if available
+    naive_prints = ""
+    if task.naive_code:
+        import re
+        prints = [l.strip() for l in task.naive_code.split('\n')
+                 if 'cout' in l and 'Time' not in l and 'time' not in l and 'elapsed' not in l]
+        if prints:
+            naive_prints = f"""
+COPY THESE PRINT STATEMENTS EXACTLY (for non-timing output):
+{chr(10).join(prints)}
+These lines MUST appear in your code unchanged."""
+
+    prompt = f"""You are an expert C++ programmer. Implement EXACTLY this design.
+
+TASK: {task.description}
+CONSTRAINTS: {task.constraints}
+{output_requirement}
+{naive_prints}
+{few_shot}
+
+DESIGN DECISIONS (you MUST follow these — do NOT change the approach):
+Strategy: {design.strategy}
+Data structures: {design.data_structures}
+Reasoning: {design.reasoning}
+
+STRICT RULES:
+1. DO NOT add threading/concurrency unless the design explicitly says to
+2. DO NOT use std::atomic unless the design explicitly says to
+3. Use EXACTLY the data structures specified in the design above
+4. Keep it simple — simpler code is faster (fewer abstractions = fewer cache misses)
+5. NEVER over-engineer: if the task is simple, the code should be simple
+6. CRITICAL — OUTPUT PRESERVATION:
+   - Do NOT change any constants (N, array sizes, iteration counts)
+   - Do NOT change the random seed (must be 42)
+   - Do NOT skip any computation steps
+   - The program MUST produce the EXACT same output as the original
+   - You may change HOW data is stored and accessed, but NOT what is computed
+7. FIRMWARE SAFETY (for embedded/semiconductor code):
+   - NEVER modify volatile variables or their access patterns
+   - NEVER move or remove memory barriers (__dmb, __dsb, __isb)
+   - NEVER change packed struct layout or member order
+   - NEVER modify inline assembly blocks (asm volatile)
+   - Treat hal_*/mtk_*/hw_* functions as opaque side-effects (do not reorder)
+8. Complete program with #include <...> and int main()
+9. Timing: auto start = std::chrono::high_resolution_clock::now(); ... auto end = ...;
+   double elapsed = std::chrono::duration<double>(end - start).count();
+8. Print: std::cout << "Time: " << elapsed << " seconds" << std::endl;
+9. Every for loop: for (int i = 0; i < N; i++)  — use < not <=
+10. Use seed 42 for any random generation: std::mt19937 gen(42);
+11. CORRECTNESS FIRST: the code MUST compile and produce correct output. An incorrect optimization is worse than no optimization.
+12. For binary search: use lo + (hi - lo) / 2 instead of (lo + hi) / 2 to avoid signed overflow
+
+Output ONLY the code in a ```cpp``` block. No explanation."""
+
+    resp = ollama.call(prompt, model=model, max_tokens=4096)
+    return ollama.extract_code(resp, "cpp")
+
+
+def _fix(code: str, verify: compiler.VerifyResult, task: Task, analysis: Analysis, model: str) -> str:
+    error_type = "compile" if not verify.compile_ok else "runtime"
+    error_detail = verify.errors[:1500]
+
+    # Check for sanitizer issues
+    sanitizer_info = ""
+    if verify.details.get("asan"):
+        sanitizer_info = f"\nAddressSanitizer found: {verify.details['asan'][:500]}"
+        error_type = "memory safety"
+    if verify.details.get("ubsan"):
+        sanitizer_info = f"\nUndefined Behavior found: {verify.details['ubsan'][:500]}"
+        error_type = "undefined behavior"
+
+    prompt = f"""Fix this C++ code. Error type: {error_type}
+
+ERROR:
+{error_detail}
+{sanitizer_info}
+
+BROKEN CODE:
+```cpp
+{code}
+```
+
+TASK: {task.description}
+
+C++ RULES:
+- Every for loop MUST have < or <= : for (int i = 0; i < N; i++)
+- Every #include MUST have angle brackets: #include <iostream>
+- Fix the specific error above
+- Keep the optimized design intent
+
+Output ONLY the COMPLETE fixed code in a ```cpp``` block."""
+
+    resp = ollama.call(prompt, model=model, max_tokens=4096)
+    fixed = ollama.extract_code(resp, "cpp")
+    return fixed if len(fixed) > 30 else code
+
+
+def _fix_semantic(code: str, expected_output: str, task: Task, model: str) -> str:
+    """Fix code that compiles and runs but produces WRONG output.
+    This is the most critical fix — output must match exactly."""
+    prompt = f"""CRITICAL: This optimized C++ code compiles and runs, but produces WRONG output.
+
+EXPECTED OUTPUT (first line): {expected_output}
+
+The code MUST produce this EXACT output. The optimization changed the program's behavior.
+
+Common causes of output mismatch:
+1. Changed array size N or loop count — MUST keep original values
+2. Changed random seed — MUST use seed 42
+3. Skipped computation steps — MUST do ALL original steps
+4. Changed data types (int vs double) — MUST keep original types
+5. Changed algorithm (e.g., skipped creating array) — MUST match original logic flow
+
+BROKEN CODE (wrong output):
+```cpp
+{code}
+```
+
+TASK: {task.description}
+
+RULES:
+- The optimized code MUST produce EXACTLY the same first line of output
+- You may change data structures (vector→array) and loop order
+- You may NOT change constants, array sizes, or computation logic
+- You may NOT skip any computation steps
+- Output ONLY the COMPLETE fixed code in a ```cpp``` block"""
+
+    resp = ollama.call(prompt, model=model, max_tokens=4096)
+    fixed = ollama.extract_code(resp, "cpp")
+    return fixed if len(fixed) > 30 else code
+
+
+════════════════════════════════════════════════════════════
+FILE: carboncode/agent/decompose.py
+PURPOSE: Decompose Pipeline — Divide & Conquer for 7B models
+         THINK → PSEUDOCODE → VERIFY → TRANSLATE → CHECK
+════════════════════════════════════════════════════════════
+
+"""
+CarbonCode Decompose Pipeline — Divide & Conquer for 7B models.
+
+Key insight: 7B can TRANSLATE precise pseudocode to C++ correctly,
+but CANNOT derive correct algorithm logic from high-level descriptions.
+
+Architecture:
+  Phase 1: THINK — Analyze problem, identify algorithm, write pseudocode
+  Phase 2: VERIFY LOGIC — Test pseudocode on small examples mentally
+  Phase 3: TRANSLATE — Convert verified pseudocode to C++
+  Phase 4: COMPILE & CHECK — Build, run, compare output
+  Phase 5: LOOP — If wrong, diagnose which phase failed and retry
+
+The "meta-prompt" loop: each phase feeds into the next,
+and failures route back to the appropriate phase.
+"""
+
+import json
+import time
+import re
+from dataclasses import dataclass, field
+from typing import Optional, List
+
+from ..llm import ollama
+from ..tools import compiler
+from ..tools.preflight import check_and_fix, validate_output_match
+
+
+@dataclass
+class DecomposeResult:
+    success: bool = False
+    speedup: float = 0.0
+    code: str = ""
+    naive_time: float = 0.0
+    opt_time: float = 0.0
+    phases_log: List[str] = field(default_factory=list)
+    total_rounds: int = 0
+    naive_output: str = ""
+    opt_output: str = ""
+
+
+def run_decomposed(
+    description: str,
+    naive_code: str,
+    model: str = "qwen2.5-coder:7b",
+    max_rounds: int = 3,
+    stdin_data: str = "",
+) -> DecomposeResult:
+    """Run the full decompose pipeline."""
+    result = DecomposeResult()
+    t0 = time.time()
+
+    print(f"\n{'='*60}")
+    print(f"  CarbonCode DECOMPOSE | {description[:50]}")
+    print(f"{'='*60}")
+
+    # ── Baseline ──
+    print("\n  [Baseline] Benchmarking naive code...")
+    naive_bench = compiler.benchmark(naive_code, stdin_data=stdin_data)
+    if not naive_bench.run_ok:
+        print(f"  Naive FAIL: {naive_bench.errors[:80]}")
+        return result
+    result.naive_time = naive_bench.benchmark_time
+    result.naive_output = naive_bench.output
+    print(f"  Naive: {naive_bench.benchmark_time:.4f}s | Output: {naive_bench.output[:60]}")
+
+    # Extract naive cout statements for output preservation
+    naive_couts = [l.strip() for l in naive_code.split('\n')
+                   if 'cout' in l and 'Time' not in l and 'time' not in l
+                   and 'elapsed' not in l and 'chrono' not in l]
+
+    # Extract constants and data generation from naive code
+    naive_setup = _extract_setup(naive_code)
+
+    for round_num in range(max_rounds):
+        print(f"\n  {'─'*50}")
+        print(f"  Round {round_num + 1}/{max_rounds}")
+        print(f"  {'─'*50}")
+
+        # ── Phase 1: THINK ──
+        print("\n  [Phase 1] THINK — Analyzing algorithm...")
+        analysis = _phase_think(description, naive_code, naive_setup, model)
+        result.phases_log.append(f"R{round_num+1} THINK: {analysis[:100]}")
+        print(f"  → {analysis[:120]}")
+
+        # ── Phase 2: PSEUDOCODE ──
+        print("\n  [Phase 2] PSEUDOCODE — Writing precise steps...")
+        pseudocode = _phase_pseudocode(description, naive_code, naive_setup, analysis, model)
+        result.phases_log.append(f"R{round_num+1} PSEUDO: {pseudocode[:100]}")
+        print(f"  → {pseudocode[:200]}")
+
+        # ── Phase 3: VERIFY LOGIC ──
+        print("\n  [Phase 3] VERIFY — Checking logic on examples...")
+        verified = _phase_verify(pseudocode, naive_bench.output, model)
+        result.phases_log.append(f"R{round_num+1} VERIFY: {verified[:100]}")
+        print(f"  → {verified[:150]}")
+
+        # ── Phase 4: TRANSLATE ──
+        print("\n  [Phase 4] TRANSLATE — Pseudocode → C++...")
+        code = _phase_translate(pseudocode, verified, naive_setup, naive_couts, model)
+        code, fixes = check_and_fix(code)
+        if fixes:
+            print(f"  Pre-flight: {', '.join(fixes[:3])}")
+
+        # ── Phase 5: COMPILE & CHECK ──
+        print("\n  [Phase 5] CHECK — Compile, run, validate...")
+        verify = compiler.compile_and_run(code, stdin_data=stdin_data)
+
+        if not verify.compile_ok:
+            print(f"  ❌ Compile fail: {verify.errors[:80]}")
+            # Try to fix compile error
+            code = _fix_compile(code, verify.errors, model)
+            code, _ = check_and_fix(code)
+            verify = compiler.compile_and_run(code, stdin_data=stdin_data)
+            if not verify.compile_ok:
+                print(f"  ❌ Still can't compile, retrying from Phase 1...")
+                continue
+
+        if not verify.run_ok:
+            print(f"  ❌ Runtime error: {verify.errors[:80]}")
+            continue
+
+        # Check output
+        if not validate_output_match(naive_bench.output, verify.output):
+            print(f"  ❌ Output mismatch!")
+            print(f"     Expected: {naive_bench.output[:60]}")
+            print(f"     Got:      {verify.output[:60]}")
+
+            # Diagnose: is the algorithm wrong or just the translation?
+            diagnosis = _diagnose_mismatch(
+                naive_bench.output, verify.output, pseudocode, code, model
+            )
+            print(f"  Diagnosis: {diagnosis[:100]}")
+            result.phases_log.append(f"R{round_num+1} MISMATCH: {diagnosis[:100]}")
+            continue
+
+        # ✅ Success! Benchmark it.
+        print(f"  ✅ Output matches!")
+        bench = compiler.benchmark(code, stdin_data=stdin_data)
+        if bench.run_ok:
+            result.success = True
+            result.code = code
+            result.opt_time = bench.benchmark_time
+            result.opt_output = bench.output
+            result.speedup = naive_bench.benchmark_time / bench.benchmark_time if bench.benchmark_time > 0 else 0
+            result.total_rounds = round_num + 1
+            print(f"  Optimized: {bench.benchmark_time:.4f}s")
+            print(f"  Speedup: {result.speedup:.1f}x")
+            break
+
+    elapsed = time.time() - t0
+    print(f"\n  {'✅' if result.success else '❌'} Done in {elapsed:.1f}s ({result.total_rounds} rounds)")
+    print(f"{'='*60}\n")
+    return result
+
+
+# ── Phase Implementations ──
+
+def _extract_setup(naive_code: str) -> str:
+    """Extract constants, data generation, and I/O from naive code."""
+    lines = naive_code.split('\n')
+    setup_lines = []
+    for line in lines:
+        stripped = line.strip()
+        if any(kw in stripped for kw in ['const int', 'const double', 'mt19937', 'uniform_',
+                                          'new int', 'new double', 'std::vector', 'std::list',
+                                          'std::sort', 'for (int i = 0', '#include']):
+            setup_lines.append(stripped)
+        if 'cout' in stripped and 'Time' not in stripped:
+            setup_lines.append(f"OUTPUT: {stripped}")
+    return '\n'.join(setup_lines)
+
+
+def _phase_think(description: str, naive_code: str, setup: str, model: str) -> str:
+    """Phase 1: Understand the problem and identify the optimal algorithm."""
+    prompt = f"""You are analyzing a C++ optimization problem. Do NOT write code.
+
+TASK: {description}
+
+NAIVE APPROACH (what the current code does):
+{naive_code}
+
+Questions to answer:
+1. What is the naive algorithm's time complexity?
+2. What is the OPTIMAL algorithm for this problem?
+3. What is the optimal time complexity?
+4. What are the EDGE CASES that could cause bugs? (duplicates, overflow, boundary)
+5. What data structures does the optimal solution need?
+
+Be specific and precise. Think about what could go wrong.
+"""
+    return ollama.call(prompt, model=model, max_tokens=1024)
+
+
+def _phase_pseudocode(description: str, naive_code: str, setup: str,
+                       analysis: str, model: str) -> str:
+    """Phase 2: Write precise, line-by-line pseudocode."""
+    prompt = f"""Based on this analysis, write PRECISE pseudocode for the optimal solution.
+
+ANALYSIS:
+{analysis}
+
+SETUP FROM NAIVE CODE (must keep these EXACT values):
+{setup}
+
+RULES FOR PSEUDOCODE:
+- Write every line of logic, no shortcuts like "do the obvious thing"
+- Include ALL edge cases (duplicates, empty arrays, overflow)
+- Variable names must be specific (left, right, count, not x, y, z)
+- Loop conditions must be exact (< vs <=, when to break)
+- Every arithmetic operation must be explicit
+- Include the data generation and output (same as naive)
+- STACK SIZE LIMIT: Arrays larger than 250000 elements MUST use heap allocation (new/malloc/vector), NOT stack (int arr[N]). Stack is only 8MB. int[2000000] = 8MB = CRASH.
+- Use long long for any sum that could exceed 2^31
+
+Format:
+```pseudocode
+// Setup (keep from naive)
+...
+// Algorithm
+...
+// Output (same as naive)
+...
+```
+"""
+    return ollama.call(prompt, model=model, max_tokens=1024)
+
+
+def _phase_verify(pseudocode: str, expected_output: str, model: str) -> str:
+    """Phase 3: Mentally verify pseudocode on small examples."""
+    prompt = f"""Verify this pseudocode is correct by tracing through small examples.
+
+PSEUDOCODE:
+{pseudocode}
+
+EXPECTED OUTPUT for the full input: {expected_output[:100]}
+
+Trace through these small examples:
+1. Pick a small test case relevant to this algorithm
+2. Walk through EVERY step of the pseudocode on that test case
+3. Check if the result is correct
+
+Also check:
+- Integer overflow? (use long long if sum could exceed 2^31)
+- Off-by-one in loop bounds?
+- Correct handling of duplicates?
+- Does the output format match exactly?
+
+If you find ANY errors, write the CORRECTED pseudocode.
+If the pseudocode is correct, say "VERIFIED CORRECT" and explain why.
+"""
+    return ollama.call(prompt, model=model, max_tokens=1024)
+
+
+def _phase_translate(pseudocode: str, verification: str, setup: str,
+                      naive_couts: list, model: str) -> str:
+    """Phase 4: Translate verified pseudocode to C++. Pure translation, no thinking."""
+    cout_text = '\n'.join(naive_couts) if naive_couts else 'std::cout << result << std::endl;'
+
+    prompt = f"""Translate this pseudocode to C++. Do NOT change any logic. Pure translation only.
+
+PSEUDOCODE:
+{pseudocode}
+
+CORRECTIONS FROM VERIFICATION:
+{verification}
+
+REQUIREMENTS:
+- Complete program: #include headers, int main()
+- Keep ALL constants exactly as in pseudocode
+- Keep data generation exactly as in pseudocode (mt19937(42))
+- OUTPUT must use these EXACT cout statements: {cout_text}
+- Add chrono timing AFTER the result output line
+- Use int, long long, double as appropriate to avoid overflow
+- STACK SAFETY: For arrays > 250000 elements, use new/vector, NOT stack arrays
+- NEVER write int arr[N] where N > 250000. Use: int* arr = new int[N]; or std::vector<int> arr(N);
+
+TRANSLATE LINE BY LINE. Do not skip or simplify any step.
+Output ONLY code in ```cpp``` block.
+"""
+    resp = ollama.call(prompt, model=model, max_tokens=2048)
+    return ollama.extract_code(resp, "cpp")
+
+
+def _fix_compile(code: str, errors: str, model: str) -> str:
+    """Fix compile errors."""
+    prompt = f"""Fix this C++ compile error. Change as little as possible.
+
+ERROR: {errors[:500]}
+
+CODE:
+```cpp
+{code}
+```
+
+Output ONLY the fixed code in ```cpp``` block.
+"""
+    resp = ollama.call(prompt, model=model, max_tokens=2048)
+    fixed = ollama.extract_code(resp, "cpp")
+    return fixed if len(fixed) > 30 else code
+
+
+def _diagnose_mismatch(expected: str, actual: str, pseudocode: str,
+                        code: str, model: str) -> str:
+    """Diagnose why output doesn't match — is it algorithm or translation error?"""
+    prompt = f"""The C++ code produces wrong output.
+
+EXPECTED: {expected[:200]}
+ACTUAL: {actual[:200]}
+
+PSEUDOCODE (the intended algorithm):
+{pseudocode[:500]}
+
+The error is either:
+A) ALGORITHM ERROR — the pseudocode logic itself is wrong
+B) TRANSLATION ERROR — the pseudocode is right but C++ doesn't match it
+
+Which is it? And what specifically is wrong?
+Answer in 2-3 sentences.
+"""
+    return ollama.call(prompt, model=model, max_tokens=256)
+
+
+════════════════════════════════════════════════════════════
+FILE: carboncode/tools/compiler.py
+PURPOSE: C/C++ compilation wrapper with sanitizer support
+         Handles compile, run, ASan/UBSan, and benchmarking
+════════════════════════════════════════════════════════════
+
+"""C/C++ compilation wrapper with sanitizer support."""
+
+import subprocess
+import os
+import time
+from dataclasses import dataclass, field
+from typing import Optional
+
+WORK = os.path.join(os.path.dirname(__file__), "..", "..", "experiments", "_workspace")
+os.makedirs(WORK, exist_ok=True)
+
+
+@dataclass
+class CompileResult:
+    success: bool
+    errors: str = ""
+    binary_path: str = ""
+
+
+@dataclass
+class RunResult:
+    success: bool
+    stdout: str = ""
+    stderr: str = ""
+    wall_time: float = 0.0
+    returncode: int = -1
+
+
+@dataclass
+class VerifyResult:
+    compile_ok: bool = False
+    run_ok: bool = False
+    sanitizer_clean: bool = False
+    benchmark_time: float = 0.0
+    output: str = ""
+    errors: str = ""
+    details: dict = field(default_factory=dict)
+
+
+def compile_cpp(
+    code: str,
+    filename: str = "solution.cpp",
+    flags: str = "-O2 -std=c++17 -march=native",
+    sanitizers: bool = True,
+) -> CompileResult:
+    """Compile C++ code, optionally with sanitizers."""
+    src = os.path.join(WORK, filename)
+    binary = os.path.join(WORK, filename.replace(".cpp", ""))
+
+    with open(src, "w") as f:
+        f.write(code)
+
+    cmd = f"g++ {flags}"
+    if sanitizers:
+        cmd += " -fsanitize=address,undefined -fno-omit-frame-pointer"
+    cmd += f" -o {binary} {src}"
+
+    r = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30)
+    if r.returncode != 0:
+        return CompileResult(success=False, errors=r.stderr.strip())
+    return CompileResult(success=True, binary_path=binary)
+
+
+def run_binary(binary_path: str, timeout: float = 30.0, stdin_data: str = "") -> RunResult:
+    """Run a compiled binary and capture output + timing.
+    Args:
+        stdin_data: If provided, feed this as stdin to the program.
+    """
+    try:
+        start = time.time()
+        r = subprocess.run(
+            [binary_path], capture_output=True, timeout=timeout,
+            input=stdin_data.encode() if stdin_data else None,
+        )
+        wall = time.time() - start
+        try:
+            stdout = r.stdout.decode('utf-8', errors='replace').strip()
+            stderr = r.stderr.decode('utf-8', errors='replace').strip()
+        except AttributeError:
+            stdout = str(r.stdout).strip()
+            stderr = str(r.stderr).strip()
+        return RunResult(
+            success=r.returncode == 0,
+            stdout=stdout,
+            stderr=stderr,
+            wall_time=wall,
+            returncode=r.returncode,
+        )
+    except subprocess.TimeoutExpired:
+        return RunResult(success=False, stderr=f"TIMEOUT ({timeout}s)")
+
+
+def compile_and_run(code: str, sanitizers: bool = True, stdin_data: str = "") -> VerifyResult:
+    """Compile → run → return full verification result.
+    Args:
+        stdin_data: If provided, feed this as stdin to the program.
+    """
+    result = VerifyResult()
+
+    # Compile with sanitizers
+    comp = compile_cpp(code, sanitizers=sanitizers)
+    result.compile_ok = comp.success
+    if not comp.success:
+        result.errors = comp.errors
+        return result
+
+    # Run
+    run = run_binary(comp.binary_path, stdin_data=stdin_data)
+    result.run_ok = run.success
+    result.output = run.stdout
+    result.benchmark_time = run.wall_time
+    result.errors = run.stderr  # Always capture stderr
+    # Check for sanitizer output
+    if "ERROR: AddressSanitizer" in run.stderr:
+        result.details["asan"] = run.stderr
+    if "runtime error" in run.stderr:
+        result.details["ubsan"] = run.stderr
+
+    # Sanitizer clean = no ASAN/UBSAN errors (ignore benign warnings)
+    has_asan = "ERROR: AddressSanitizer" in run.stderr or "heap-buffer-overflow" in run.stderr
+    has_ubsan = "runtime error" in run.stderr
+    result.sanitizer_clean = run.success and not has_asan and not has_ubsan
+    return result
+
+
+def benchmark(code: str, runs: int = 5, stdin_data: str = "") -> VerifyResult:
+    """Compile WITHOUT sanitizers, run multiple times, report median time.
+
+    Uses median (not min/mean) for robustness against OS scheduling noise.
+    Discards first run as warmup.
+    Args:
+        stdin_data: If provided, feed this as stdin to the program.
+    """
+    comp = compile_cpp(code, sanitizers=False, flags="-O2 -std=c++17 -march=native")
+    if not comp.success:
+        return VerifyResult(compile_ok=False, errors=comp.errors)
+
+    times = []
+    last_output = ""
+    for i in range(runs + 1):  # +1 for warmup
+        run = run_binary(comp.binary_path, stdin_data=stdin_data)
+        if run.success:
+            if i > 0:  # Skip warmup run
+                times.append(run.wall_time)
+            last_output = run.stdout
+
+    if not times:
+        return VerifyResult(compile_ok=True, run_ok=False, errors="All runs failed")
+
+    times.sort()
+    # Remove highest and lowest, take median of rest
+    if len(times) >= 3:
+        trimmed = times[1:-1]  # Remove min and max
+    else:
+        trimmed = times
+    median = trimmed[len(trimmed) // 2]
+
+    return VerifyResult(
+        compile_ok=True,
+        run_ok=True,
+        sanitizer_clean=True,
+        benchmark_time=median,
+        output=last_output,
+        details={
+            "all_times": times,
+            "median": median,
+            "mean": sum(times)/len(times),
+            "min": min(times),
+            "max": max(times),
+            "trimmed_mean": sum(trimmed)/len(trimmed) if trimmed else 0,
+        },
+    )
+
+
+════════════════════════════════════════════════════════════
+FILE: carboncode/tools/preflight.py
+PURPOSE: Pre-flight checks for generated C++ code
+         Auto-fixes common LLM mistakes BEFORE compilation
+════════════════════════════════════════════════════════════
+
+"""
+Pre-flight checks for generated C++ code.
+Catches common LLM mistakes BEFORE compilation, fixing them cheaply.
+Inspired by Kael Daemon's ast.parse() pre-check.
+"""
+
+import re
+from typing import Tuple
+
+
+def check_and_fix(code: str) -> Tuple[str, list]:
+    """
+    Run fast syntactic checks on generated C++ code.
+    Fix what we can, return list of issues found.
+
+    Returns: (fixed_code, issues_list)
+    """
+    issues = []
+    original = code
+
+    # 1. Missing #include for common symbols
+    INCLUDE_MAP = {
+        'std::cout': '<iostream>',
+        'std::cin': '<iostream>',
+        'std::endl': '<iostream>',
+        'std::vector': '<vector>',
+        'std::string': '<string>',
+        'std::sort': '<algorithm>',
+        'std::min': '<algorithm>',
+        'std::max': '<algorithm>',
+        'std::unique': '<algorithm>',
+        'std::partial_sort': '<algorithm>',
+        'std::nth_element': '<algorithm>',
+        'std::unordered_map': '<unordered_map>',
+        'std::unordered_set': '<unordered_set>',
+        'std::map': '<map>',
+        'std::set': '<set>',
+        'std::queue': '<queue>',
+        'std::deque': '<deque>',
+        'std::list': '<list>',
+        'std::mt19937': '<random>',
+        'std::uniform_': '<random>',
+        'std::chrono': '<chrono>',
+        'std::sqrt': '<cmath>',
+        'sqrt(': '<cmath>',
+        'std::memset': '<cstring>',
+        'memset(': '<cstring>',
+        'std::memcpy': '<cstring>',
+        'std::iota': '<numeric>',
+        'std::accumulate': '<numeric>',
+        'std::setprecision': '<iomanip>',
+        'std::fixed': '<iomanip>',
+        'std::array': '<array>',
+        'std::thread': '<thread>',
+        'std::atomic': '<atomic>',
+        'std::mutex': '<mutex>',
+        'std::function': '<functional>',
+        'std::unique_ptr': '<memory>',
+        'std::shared_ptr': '<memory>',
+        'INT_MAX': '<climits>',
+        'INT_MIN': '<climits>',
+        'LLONG_MAX': '<climits>',
+        'std::numeric_limits': '<limits>',
+        'std::bitset': '<bitset>',
+        'std::tuple': '<tuple>',
+        'std::pair': '<utility>',
+        'std::swap': '<utility>',
+    }
+
+    for symbol, header in INCLUDE_MAP.items():
+        if symbol in code and header not in code:
+            code = f'#include {header}\n' + code
+            issues.append(f"auto-added {header} for {symbol}")
+
+    # 2. Missing main()
+    if 'int main' not in code and 'void main' not in code:
+        issues.append("WARNING: no main() function found")
+
+    # 3. Unbalanced braces
+    opens = code.count('{')
+    closes = code.count('}')
+    if opens != closes:
+        diff = opens - closes
+        if diff > 0 and diff <= 3:
+            code += '\n' + '}' * diff
+            issues.append(f"auto-added {diff} closing brace(s)")
+        elif diff < 0 and abs(diff) <= 2:
+            issues.append(f"WARNING: {abs(diff)} extra closing brace(s)")
+
+    # 4. Common LLM mistakes
+    # bits/stdc++.h doesn't work on macOS — handle with and without spaces
+    bits_pattern = re.compile(r'#include\s*<bits/stdc\+\+\.h>')
+    if bits_pattern.search(code):
+        replacement = ('#include <iostream>\n#include <vector>\n#include <algorithm>\n'
+            '#include <random>\n#include <chrono>\n#include <cmath>\n'
+            '#include <numeric>\n#include <string>\n#include <unordered_map>\n'
+            '#include <unordered_set>\n#include <memory>\n#include <functional>\n'
+            '#include <set>\n#include <map>\n#include <queue>\n#include <stack>\n'
+            '#include <deque>\n#include <list>\n#include <bitset>\n#include <cassert>\n'
+            '#include <cstring>\n#include <climits>\n#include <iomanip>\n#include <sstream>')
+        code = bits_pattern.sub(replacement, code)
+        issues.append("replaced bits/stdc++.h with explicit includes")
+
+    # 5. Stack overflow prevention: large arrays on stack
+    # Find patterns like: int arr[N] where N > 250000 (>1MB for int)
+    large_stack = re.findall(r'((?:int|double|float|long|char)\s+\w+)\[(\d+)\]', code)
+    for decl, size in large_stack:
+        n = int(size)
+        type_size = 8 if 'double' in decl or 'long' in decl else 4
+        total_bytes = n * type_size
+        if total_bytes > 1_000_000:  # > 1MB
+            issues.append(f"WARNING: {decl}[{size}] = {total_bytes//1_000_000}MB on stack (may segfault)")
+
+    # 6. Detect infinite loops (basic heuristic)
+    if 'while(true)' in code.replace(' ', '') or 'while(1)' in code.replace(' ', ''):
+        if 'break' not in code and 'return' not in code.split('while')[1][:200]:
+            issues.append("WARNING: possible infinite loop (while(true) without break)")
+
+    # 7. Using namespace std (add if using std:: everywhere)
+    if 'using namespace std' not in code and code.count('std::') > 10:
+        # Don't add — explicit is better, but not an error
+        pass
+
+    # 8. Duplicate includes
+    includes = re.findall(r'#include\s*[<"]([^>"]+)[>"]', code)
+    seen = set()
+    lines = code.split('\n')
+    new_lines = []
+    for line in lines:
+        inc = re.match(r'#include\s*[<"]([^>"]+)[>"]', line.strip())
+        if inc:
+            header = inc.group(1)
+            if header in seen:
+                issues.append(f"removed duplicate #include <{header}>")
+                continue
+            seen.add(header)
+        new_lines.append(line)
+    code = '\n'.join(new_lines)
+
+    return code, issues
+
+
+def validate_output_match(naive_output: str, optimized_output: str) -> bool:
+    """
+    Check if optimized code produces the same meaningful output as naive.
+    Ignores: timing lines, case differences, whitespace, label formatting.
+    Focuses on: actual numeric values.
+    """
+    import re
+
+    def extract_numbers(s):
+        """Extract all numbers from output, ignoring labels and timing."""
+        lines = s.strip().split('\n')
+        numbers = []
+        for line in lines:
+            line = line.strip()
+            # Skip timing lines
+            if re.match(r'(?i)time[:\s]', line):
+                continue
+            if re.match(r'(?i)elapsed[:\s]', line):
+                continue
+            if re.match(r'(?i)throughput[:\s]', line):
+                continue
+            if re.match(r'(?i)slots.*sec', line):
+                continue
+            # Extract meaningful numbers (skip array indices like [0][0])
+            # Remove array index patterns first
+            clean_line = re.sub(r'\[\d+\]', '', line)
+            nums = re.findall(r'-?\d+\.?\d*(?:e[+-]?\d+)?', clean_line)
+            numbers.extend(nums)
+        return numbers
+
+    def clean(s):
+        lines = s.strip().split('\n')
+        # Remove timing/perf lines
+        lines = [l.strip().lower() for l in lines
+                 if not re.match(r'(?i)\s*(time|elapsed|throughput|slots)', l.strip())]
+        return '\n'.join(lines)
+
+    # Primary: compare cleaned text (case-insensitive, timing removed)
+    if clean(naive_output) == clean(optimized_output):
+        return True
+
+    # Fallback 1: compare just the numbers (ignore all labels/formatting)
+    naive_nums = extract_numbers(naive_output)
+    opt_nums = extract_numbers(optimized_output)
+    if naive_nums and opt_nums and naive_nums == opt_nums:
+        return True
+
+    # Fallback 2: compare numbers with float tolerance (only for floats, not ints)
+    if naive_nums and opt_nums and len(naive_nums) == len(opt_nums):
+        all_close = True
+        for n, o in zip(naive_nums, opt_nums):
+            try:
+                # If both look like integers, require exact match
+                if '.' not in n and '.' not in o and 'e' not in n.lower() and 'e' not in o.lower():
+                    if n != o:
+                        all_close = False
+                        break
+                else:
+                    nf, of = float(n), float(o)
+                    if nf == 0 and of == 0:
+                        continue
+                    if abs(nf - of) / max(abs(nf), abs(of), 1e-10) > 1e-4:
+                        all_close = False
+                        break
+            except ValueError:
+                if n != o:
+                    all_close = False
+                    break
+        if all_close:
+            return True
+
+    # Fallback 3: compare as SETS (only for lists with 3+ numbers, like top-K)
+    if naive_nums and opt_nums and len(naive_nums) >= 3 and len(naive_nums) == len(opt_nums):
+        if sorted(naive_nums) == sorted(opt_nums):
+            return True
+        # Try sorted floats with tolerance
+        try:
+            naive_floats = sorted(float(x) for x in naive_nums)
+            opt_floats = sorted(float(x) for x in opt_nums)
+            if all(abs(a-b) / max(abs(a), abs(b), 1e-10) < 1e-4
+                   for a, b in zip(naive_floats, opt_floats)):
+                return True
+        except ValueError:
+            pass
+
+    # All failed
+    return False
+
+
+════════════════════════════════════════════════════════════
+FILE: carboncode/llm/ollama.py
+PURPOSE: Ollama LLM backend — local model interface via curl
+════════════════════════════════════════════════════════════
+
+"""Ollama LLM backend — supports any local model."""
+
+import json
+import subprocess
+from typing import Optional
+
+
+def call(
+    prompt: str,
+    model: str = "qwen2.5-coder:7b",
+    system: str = "",
+    temperature: float = 0.2,
+    max_tokens: int = 4096,
+    url: str = "http://localhost:11434",
+) -> str:
+    payload = {
+        "model": model,
+        "prompt": prompt,
+        "stream": False,
+        "options": {"temperature": temperature, "num_predict": max_tokens},
+    }
+    if system:
+        payload["system"] = system
+
+    result = subprocess.run(
+        ["curl", "-s", f"{url}/api/generate", "-d", json.dumps(payload)],
+        capture_output=True, text=True, timeout=300,
+    )
+    resp = json.loads(result.stdout)
+    return resp.get("response", "")
+
+
+def extract_code(text: str, lang: str = "cpp") -> str:
+    """Extract code block from LLM response."""
+    import re
+    patterns = [rf"```{lang}(.*?)```", rf"```c\+\+(.*?)```", r"```(.*?)```"]
+    for p in patterns:
+        m = re.findall(p, text, re.DOTALL)
+        if m:
+            return m[0].strip()
+    return text.strip()
+
+
+════════════════════════════════════════════════════════════
+FILE: carboncode/dimensions/hardware_cost.py
+PURPOSE: Hardware-Aware Cost Modeling — cycle costs for ARM/x86
+         Injected into Architect prompt for hardware-aware decisions
+════════════════════════════════════════════════════════════
+
+"""
+Hardware-Aware Cost Modeling for CarbonCode.
+Provides cycle costs for common operations on specific architectures.
+Injected into the Architect prompt to guide hardware-aware decisions.
+"""
+
+# ARM Cortex-A78 (MediaTek Dimensity flagship SoC)
+CORTEX_A78 = {
+    "name": "ARM Cortex-A78",
+    "l1_cache": "64KB",
+    "l2_cache": "256KB per core",
+    "l3_cache": "4MB shared",
+    "cache_line": "64 bytes",
+    "costs": {
+        "L1 hit": "4 cycles",
+        "L2 hit": "10 cycles",
+        "L3 hit": "30 cycles",
+        "DRAM access": "100-200 cycles",
+        "Branch mispredict": "13 cycles",
+        "Integer multiply": "3 cycles",
+        "Float multiply": "4 cycles",
+        "NEON SIMD op": "1-2 cycles (processes 4 floats)",
+        "Function call": "5-10 cycles (call + return)",
+        "Virtual dispatch": "15-20 cycles (vtable lookup + call)",
+        "malloc": "100-500 cycles",
+        "memcpy (cache-hot)": "0.5 cycles/byte",
+        "memcpy (cache-cold)": "4-8 cycles/byte",
+    },
+    "guidelines": [
+        "64-byte cache line: keep hot data within one cache line",
+        "Prefer sequential access (stride-1) over random access",
+        "Branch-free code preferred in tight loops",
+        "NEON processes 4 floats or 16 bytes simultaneously",
+        "Avoid virtual functions in hot loops (15-20 cycle overhead)",
+        "malloc in hot path is 100-500 cycles — pre-allocate",
+        "False sharing: different threads writing to same 64-byte line",
+    ]
+}
+
+# Generic x86-64 (Intel/AMD server)
+X86_64 = {
+    "name": "x86-64 (generic)",
+    "l1_cache": "32KB",
+    "l2_cache": "256KB",
+    "l3_cache": "8-32MB shared",
+    "cache_line": "64 bytes",
+    "costs": {
+        "L1 hit": "4-5 cycles",
+        "L2 hit": "12 cycles",
+        "L3 hit": "30-40 cycles",
+        "DRAM access": "100-300 cycles",
+        "Branch mispredict": "15-20 cycles",
+        "AVX2 op": "1 cycle (processes 8 floats)",
+        "AVX-512 op": "1 cycle (processes 16 floats)",
+    },
+    "guidelines": [
+        "64-byte cache line alignment critical for SIMD",
+        "AVX2: 256-bit = 8 floats or 4 doubles simultaneously",
+        "Avoid mixing AVX-512 and SSE (frequency throttling)",
+    ]
+}
+
+ARCHITECTURES = {
+    "arm-a78": CORTEX_A78,
+    "arm-cortex-a78": CORTEX_A78,
+    "x86-64": X86_64,
+    "x86_64": X86_64,
+}
+
+
+def load_custom_config(filepath: str) -> dict:
+    """Load a company-specific hardware configuration from JSON.
+    MediaTek/TSMC engineers create their own config with proprietary cycle costs.
+    """
+    import json
+    with open(filepath) as f:
+        return json.load(f)
+
+
+def get_cost_context(target: str = "arm-a78", custom_config: str = "") -> str:
+    """Generate hardware cost context for LLM prompts.
+    Args:
+        target: Architecture name (arm-a78, x86-64, etc.)
+        custom_config: Path to company-specific JSON config file
+    """
+    if custom_config:
+        arch = load_custom_config(custom_config)
+    else:
+        arch = ARCHITECTURES.get(target.lower(), CORTEX_A78)
+
+    lines = [f"TARGET HARDWARE: {arch['name']}"]
+    lines.append(f"Cache: L1={arch['l1_cache']}, L2={arch['l2_cache']}, L3={arch['l3_cache']}")
+    lines.append(f"Cache line: {arch['cache_line']}")
+    lines.append("")
+    lines.append("CYCLE COSTS (approximate):")
+    for op, cost in arch["costs"].items():
+        lines.append(f"  {op}: {cost}")
+    lines.append("")
+    lines.append("OPTIMIZATION GUIDELINES:")
+    for g in arch["guidelines"]:
+        lines.append(f"  - {g}")
+
+    return "\n".join(lines)
+
+
+================================================================================
+================================================================================
+                      PART 2: BENCHMARK INFRASTRUCTURE
+================================================================================
+================================================================================
+
+
+════════════════════════════════════════════════════════════
+FILE: benchmarks/pie_integration/convert_and_run.py
+PURPOSE: PIE Dataset Integration — Convert PIE test.jsonl to CC format and run
+         Handles stdin/stdout test cases, multi-test validation
+════════════════════════════════════════════════════════════
+
+#!/usr/bin/env python3
+"""
+PIE Dataset Integration — Convert PIE test.jsonl to CarbonCode format and run.
+
+PIE format: src_code (slow C++), tgt_code (fast C++), test cases (stdin→stdout)
+CarbonCode format: Task(description, naive_code, stdin_data)
+
+Strategy:
+1. Load PIE test.jsonl
+2. For each task: compile src_code, run with test cases, verify it works
+3. Run CarbonCode pipeline on src_code
+4. Compare: pass rate, speedup vs PIE's human-written optimizations
+"""
+import sys, os, json, time, random, gc
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.stdout.reconfigure(line_buffering=True)
+
+from carboncode.agent.supervisor import Task, run as cc_run
+from carboncode.agent.decompose import run_decomposed
+from carboncode.tools.compiler import compile_cpp, run_binary, compile_and_run, benchmark
+from carboncode.tools.preflight import validate_output_match
+
+PIE_DIR = os.path.dirname(__file__)
+DATA_FILE = os.path.join(PIE_DIR, "data", "PIE_Dataset", "test.jsonl")
+TC_DIR = os.path.join(PIE_DIR, "merged_test_cases")
+
+
+def load_pie_tasks(max_tasks=50, seed=42):
+    """Load PIE test tasks, filter for C++ only, sample subset."""
+    tasks = []
+    with open(DATA_FILE) as f:
+        for line in f:
+            d = json.loads(line)
+            src = d.get("src_code", "")
+            tgt = d.get("tgt_code", "")
+            pid = d.get("problem_id", "")
+            tests = d.get("tests", [])
+
+            # Filter: must have src_code, tgt_code, and test cases
+            if not src or not tgt or not tests:
+                continue
+            # Filter: must be C++ (check for #include or iostream)
+            if "#include" not in src:
+                continue
+
+            tasks.append({
+                "problem_id": pid,
+                "src_code": src,
+                "tgt_code": tgt,
+                "test_indices": tests,
+                "src_runtime": d.get("src_agg_runtime"),
+                "tgt_runtime": d.get("tgt_agg_runtime"),
+            })
+
+    print(f"Loaded {len(tasks)} C++ tasks from PIE test set")
+
+    # Sample subset
+    rng = random.Random(seed)
+    if len(tasks) > max_tasks:
+        tasks = rng.sample(tasks, max_tasks)
+        print(f"Sampled {max_tasks} tasks")
+
+    return tasks
+
+
+def get_test_case(problem_id, test_idx):
+    """Load a single test case (input, expected output)."""
+    tc_dir = os.path.join(TC_DIR, problem_id)
+    if not os.path.isdir(tc_dir):
+        return None, None
+    inp_file = os.path.join(tc_dir, f"input.{test_idx}.txt")
+    out_file = os.path.join(tc_dir, f"output.{test_idx}.txt")
+    if os.path.exists(inp_file) and os.path.exists(out_file):
+        return open(inp_file).read(), open(out_file).read()
+    return None, None
+
+
+def verify_with_test_cases(code, problem_id, test_indices, max_tests=5):
+    """Compile code and verify against test cases. Returns (pass_count, total, first_stdin, error)."""
+    from carboncode.tools.preflight import check_and_fix
+    from carboncode.tools.preflight import validate_output_match
+    code, _ = check_and_fix(code)
+    comp = compile_cpp(code, sanitizers=False)
+    if not comp.success:
+        return 0, 0, "", f"Compile fail: {comp.errors[:100]}"
+
+    passed = 0
+    total = 0
+    first_stdin = ""
+    for idx in test_indices[:max_tests]:
+        inp, expected_out = get_test_case(problem_id, idx)
+        if inp is None:
+            continue
+        total += 1
+        if not first_stdin:
+            first_stdin = inp
+
+        result = run_binary(comp.binary_path, stdin_data=inp)
+        if result.success:
+            # Use validate_output_match to handle "Time: X" lines CC adds
+            if validate_output_match(expected_out.strip(), result.stdout.strip()):
+                passed += 1
+
+    return passed, total, first_stdin, None
+
+
+def run_pie_benchmark(tasks, method="cc", model="qwen2.5-coder:7b"):
+    """Run CarbonCode on PIE tasks."""
+    results = []
+
+    for i, task in enumerate(tasks):
+        pid = task["problem_id"]
+        src = task["src_code"]
+        tgt = task["tgt_code"]
+        test_indices = task["test_indices"]
+
+        print(f"\n{'━'*60}")
+        print(f"  [{i+1}/{len(tasks)}] {pid}")
+        print(f"{'━'*60}")
+
+        # Step 1: Verify src_code works
+        src_pass, src_total, first_stdin, err = verify_with_test_cases(
+            src, pid, test_indices, max_tests=3
+        )
+        if src_total == 0 or src_pass < src_total:
+            print(f"  Src verify: {src_pass}/{src_total} — skipping")
+            if err:
+                print(f"  Error: {err}")
+            continue
+
+        # Step 2: Benchmark src_code
+        from carboncode.tools.preflight import check_and_fix as _cf
+        src_fixed, _ = _cf(src)
+        src_bench = benchmark(src_fixed, stdin_data=first_stdin)
+        if not src_bench.run_ok:
+            print(f"  Src benchmark fail — skipping")
+            continue
+        print(f"  Src: {src_bench.benchmark_time:.4f}s")
+
+        # Step 3: Load validation test cases (up to 5) for multi-test validation
+        validation_cases = []
+        for idx in test_indices[:5]:
+            inp, expected_out = get_test_case(pid, idx)
+            if inp is not None and expected_out is not None:
+                validation_cases.append((inp, expected_out.strip()))
+
+        # Step 4: Run CarbonCode with multi-test validation built in
+        description = f"Optimize this C++ competitive programming solution. Keep same stdin/stdout behavior."
+
+        try:
+            if method == "cc":
+                cc_task = Task(
+                    description=description,
+                    naive_code=src,
+                    stdin_data=first_stdin,
+                    validation_cases=validation_cases,
+                )
+                r = cc_run(cc_task, model=model, max_fix_rounds=3, n_candidates=1)
+                opt_code = r.code if r.success else ""
+            elif method == "decompose":
+                dr = run_decomposed(
+                    description=description,
+                    naive_code=src,
+                    model=model,
+                    max_rounds=2,
+                    stdin_data=first_stdin,
+                )
+                opt_code = dr.code if dr.success else ""
+            else:
+                # Both: try CC first, if fail try decompose
+                cc_task = Task(
+                    description=description,
+                    naive_code=src,
+                    stdin_data=first_stdin,
+                    validation_cases=validation_cases,
+                )
+                r = cc_run(cc_task, model=model, max_fix_rounds=3, n_candidates=1)
+                if r.success:
+                    opt_code = r.code
+                else:
+                    dr = run_decomposed(
+                        description=description, naive_code=src,
+                        model=model, max_rounds=2, stdin_data=first_stdin,
+                    )
+                    opt_code = dr.code if dr.success else ""
+
+        except Exception as e:
+            print(f"  CC error: {e}")
+            import traceback; traceback.print_exc()
+            opt_code = ""
+
+        if not opt_code:
+            print(f"  CC: FAIL ❌")
+            results.append({"pid": pid, "success": False})
+            gc.collect()
+            continue
+
+        # Step 5: Final verification against all PIE test cases
+        opt_pass, opt_total, _, err = verify_with_test_cases(
+            opt_code, pid, test_indices, max_tests=5
+        )
+        if opt_total == 0 or opt_pass < opt_total:
+            print(f"  CC verify: {opt_pass}/{opt_total} — FAIL ❌")
+            results.append({"pid": pid, "success": False, "tc_pass": f"{opt_pass}/{opt_total}"})
+            gc.collect()
+            continue
+
+        # Step 6: Benchmark optimized code
+        opt_bench = benchmark(opt_code, stdin_data=first_stdin)
+        if not opt_bench.run_ok:
+            print(f"  CC benchmark fail — FAIL ❌")
+            results.append({"pid": pid, "success": False})
+            gc.collect()
+            continue
+
+        speedup = src_bench.benchmark_time / opt_bench.benchmark_time if opt_bench.benchmark_time > 0 else 0
+        print(f"  CC: {opt_bench.benchmark_time:.4f}s → {speedup:.1f}x ✅")
+
+        results.append({
+            "pid": pid,
+            "success": True,
+            "src_time": src_bench.benchmark_time,
+            "opt_time": opt_bench.benchmark_time,
+            "speedup": speedup,
+            "test_pass": f"{opt_pass}/{opt_total}",
+        })
+        gc.collect()
+
+    return results
+
+
+def main():
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--max-tasks", type=int, default=20)
+    parser.add_argument("--method", choices=["cc", "decompose", "both"], default="cc")
+    parser.add_argument("--model", default="qwen2.5-coder:7b")
+    args = parser.parse_args()
+
+    tasks = load_pie_tasks(max_tasks=args.max_tasks)
+
+    print(f"\n╔═══════════════════════════════════════════════════════╗")
+    print(f"║  PIE Benchmark — CarbonCode on {len(tasks)} tasks{' '*15}║")
+    print(f"║  Method: {args.method:<46}║")
+    print(f"╚═══════════════════════════════════════════════════════╝")
+
+    results = run_pie_benchmark(tasks, method=args.method, model=args.model)
+
+    # Summary
+    passed = [r for r in results if r.get("success")]
+    total = len(results)
+    print(f"\n{'═'*60}")
+    print(f"  PIE RESULTS — {args.method}")
+    print(f"{'═'*60}")
+    print(f"  Pass rate: {len(passed)}/{total} ({100*len(passed)/total:.0f}%)" if total > 0 else "  No results")
+
+    if passed:
+        speedups = sorted([r["speedup"] for r in passed])
+        median = speedups[len(speedups)//2]
+        mean = sum(speedups) / len(speedups)
+        print(f"  Median speedup: {median:.2f}x")
+        print(f"  Mean speedup: {mean:.2f}x")
+        print(f"  Max speedup: {max(speedups):.2f}x")
+
+    # Save
+    out_path = os.path.join(PIE_DIR, "..", "results", f"pie_integration_{args.method}_{int(time.time())}.json")
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    with open(out_path, "w") as f:
+        json.dump({"method": args.method, "total": total, "passed": len(passed), "results": results}, f, indent=2)
+    print(f"  Saved: {out_path}")
+
+
+if __name__ == "__main__":
+    main()
+
+
+════════════════════════════════════════════════════════════
+FILE: benchmarks/pie_integration/download_pie.sh
+PURPOSE: Instructions for downloading PIE dataset from Google Drive
+════════════════════════════════════════════════════════════
+
+#!/bin/bash
+# Download PIE dataset from Google Drive
+# Ref: https://github.com/madaan/pie-perf
+
+DIR="$(dirname "$0")"
+mkdir -p "$DIR/data" "$DIR/testcases"
+
+echo "=== PIE Dataset Download ==="
+echo ""
+echo "PIE data needs to be downloaded from Google Drive manually."
+echo "Please download the following files:"
+echo ""
+echo "1. Test split (JSONL):"
+echo "   https://drive.google.com/drive/folders/1E_yFqM8khN1HAH03OKhjheSlNI4rYTT7"
+echo "   → Download 'test.jsonl' → save to: $DIR/data/test.jsonl"
+echo ""
+echo "2. Merged test cases:"
+echo "   https://drive.google.com/file/d/1evBDJapwRvCQK6VUCTV8ZE9WG2k3QJQr"
+echo "   → Download and extract → save to: $DIR/testcases/"
+echo ""
+echo "After downloading, run:"
+echo "   python $DIR/convert_pie.py"
+
+
+════════════════════════════════════════════════════════════
+FILE: benchmarks/carbonbench_v2/run_comparison.py
+PURPOSE: CarbonBench v2 — CC (7B) vs GPT-5.2 head-to-head comparison
+════════════════════════════════════════════════════════════
+
+#!/usr/bin/env python3
+"""
+CarbonBench v2 — CC (7B) vs GPT-5.2 Comparison
+Runs each task sequentially to keep memory usage low.
+"""
+
+import sys, os, json, time, gc
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+
+from dotenv import load_dotenv
+load_dotenv('/Users/william/Downloads/python_c/.env')
+
+from carboncode.agent.supervisor import Task, run as cc_run
+from carboncode.tools.compiler import benchmark
+from carboncode.tools.preflight import validate_output_match
+from carboncode.llm.ollama import extract_code
+import openai
+
+client = openai.OpenAI()
+TASKS_DIR = os.path.dirname(__file__)
+
+
+def optimize_with_gpt52(naive_code: str, description: str) -> str:
+    """Ask GPT-5.2 to optimize the code (same prompt fairness as CC)."""
+    prompt = f"""Optimize this C++ program for maximum performance.
+
+TASK: {description}
+
+ORIGINAL CODE:
+```cpp
+{naive_code}
+```
+
+RULES:
+- The optimized code MUST produce EXACTLY the same output as the original
+- Do NOT change constants, array sizes, random seeds (must be 42)
+- Do NOT skip computation steps
+- Focus on: data structures, loop order, memory layout, algorithm selection
+- Must be a complete, compilable C++ program with main()
+- Include timing with chrono, print "Time: X seconds"
+- Read input from stdin in the same format
+
+Output ONLY the optimized code in a ```cpp``` block."""
+
+    try:
+        r = client.chat.completions.create(
+            model="gpt-5.2",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.2,
+            max_completion_tokens=4096,
+        )
+        return extract_code(r.choices[0].message.content, "cpp")
+    except Exception as e:
+        print(f"    GPT-5.2 API error: {e}")
+        return ""
+
+
+def run_task(task_dir: str, task_name: str) -> dict:
+    """Run one task: naive baseline, then CC, then GPT-5.2."""
+    meta = json.load(open(os.path.join(task_dir, "metadata.json")))
+    desc = open(os.path.join(task_dir, "description.txt")).read()
+    naive_code = open(os.path.join(task_dir, "naive.cpp")).read()
+
+    # Check if naive code reads from stdin
+    uses_stdin = "std::cin" in naive_code or "scanf" in naive_code
+    bench_input = ""
+    if uses_stdin:
+        bench_input_path = os.path.join(task_dir, "benchmark_input.txt")
+        bench_input = open(bench_input_path).read() if os.path.exists(bench_input_path) else ""
+
+    print(f"\n{'━'*60}")
+    print(f"  {task_name}: {meta['name']}")
+    print(f"{'━'*60}")
+
+    # ── Naive baseline ──
+    naive_bench = benchmark(naive_code, stdin_data=bench_input)
+    if not naive_bench.run_ok:
+        print(f"  Naive: FAIL — {naive_bench.errors[:80]}")
+        return {"task": task_name, "name": meta["name"], "naive": None}
+    nt = naive_bench.benchmark_time
+    print(f"  Naive: {nt:.4f}s")
+
+    result = {
+        "task": task_name,
+        "name": meta["name"],
+        "naive": nt,
+        "naive_output_preview": naive_bench.output[:100],
+    }
+
+    # ── CC (Qwen 7B pipeline) ──
+    print(f"\n  [CC] Running full pipeline...")
+    try:
+        task = Task(
+            description=desc,
+            constraints=meta.get("constraints", ""),
+            naive_code=naive_code,
+            stdin_data=bench_input,
+        )
+        cc_result = cc_run(task, model="qwen2.5-coder:7b", max_fix_rounds=3, n_candidates=3)
+
+        if cc_result.success and cc_result.verify_optimized:
+            ct = cc_result.verify_optimized.benchmark_time
+            sp = nt / ct if ct > 0 else 0
+            result["CC"] = {
+                "time": ct, "speedup": sp, "match": True,
+                "rounds": cc_result.rounds,
+            }
+            print(f"  CC: {ct:.4f}s → {sp:.1f}x ✅")
+        else:
+            result["CC"] = {"time": 0, "speedup": 0, "match": False}
+            print(f"  CC: FAIL ❌")
+    except Exception as e:
+        result["CC"] = {"time": 0, "speedup": 0, "match": False, "error": str(e)[:100]}
+        print(f"  CC: ERROR — {e}")
+
+    gc.collect()  # Memory cleanup between models
+
+    # ── GPT-5.2 ──
+    print(f"\n  [GPT-5.2] Optimizing...")
+    try:
+        opt_code = optimize_with_gpt52(naive_code, desc)
+        if opt_code and len(opt_code) > 50:
+            # Give GPT-5.2 same fix loop opportunity (3 rounds)
+            from carboncode.tools.compiler import compile_and_run
+            from carboncode.tools.preflight import check_and_fix
+
+            opt_code, _ = check_and_fix(opt_code)
+            v = compile_and_run(opt_code, stdin_data=bench_input)
+
+            fix_round = 0
+            while not v.run_ok and fix_round < 3:
+                fix_round += 1
+                print(f"    Fix round {fix_round}...")
+                # Ask GPT-5.2 to fix
+                fix_prompt = f"""Fix this C++ code. Error: {v.errors[:500]}
+
+```cpp
+{opt_code}
+```
+
+Output ONLY the fixed code in a ```cpp``` block."""
+                try:
+                    r = client.chat.completions.create(
+                        model="gpt-5.2",
+                        messages=[{"role": "user", "content": fix_prompt}],
+                        temperature=0.2, max_completion_tokens=4096)
+                    opt_code = extract_code(r.choices[0].message.content, "cpp")
+                    opt_code, _ = check_and_fix(opt_code)
+                    v = compile_and_run(opt_code, stdin_data=bench_input)
+                except:
+                    break
+
+            if v.run_ok:
+                b = benchmark(opt_code, stdin_data=bench_input)
+                if b.run_ok:
+                    out_ok = validate_output_match(naive_bench.output, b.output)
+                    if out_ok:
+                        gt = b.benchmark_time
+                        sp = nt / gt if gt > 0 else 0
+                        result["GPT-5.2"] = {"time": gt, "speedup": sp, "match": True}
+                        print(f"  GPT-5.2: {gt:.4f}s → {sp:.1f}x ✅")
+                    else:
+                        result["GPT-5.2"] = {"time": b.benchmark_time, "speedup": 0, "match": False}
+                        print(f"  GPT-5.2: output mismatch ❌")
+                        print(f"    Expected: {naive_bench.output[:80]}")
+                        print(f"    Got:      {b.output[:80]}")
+                else:
+                    result["GPT-5.2"] = {"time": 0, "speedup": 0, "match": False}
+                    print(f"  GPT-5.2: benchmark fail ❌")
+            else:
+                result["GPT-5.2"] = {"time": 0, "speedup": 0, "match": False}
+                print(f"  GPT-5.2: compile/run fail after {fix_round} fixes ❌")
+        else:
+            result["GPT-5.2"] = {"time": 0, "speedup": 0, "match": False}
+            print(f"  GPT-5.2: empty response ❌")
+    except Exception as e:
+        result["GPT-5.2"] = {"time": 0, "speedup": 0, "match": False, "error": str(e)[:100]}
+        print(f"  GPT-5.2: ERROR — {e}")
+
+    return result
+
+
+def main():
+    # Select tasks (can pass specific ones as args)
+    all_tasks = sorted([d for d in os.listdir(TASKS_DIR)
+                       if d.startswith("task_") and os.path.isdir(os.path.join(TASKS_DIR, d))])
+
+    if len(sys.argv) > 1:
+        # Run specific tasks: python run_comparison.py task_001 task_003
+        selected = [t for t in all_tasks if any(a in t for a in sys.argv[1:])]
+    else:
+        selected = all_tasks
+
+    print(f"╔═══════════════════════════════════════════════════════╗")
+    print(f"║  CarbonBench v2 — CC (7B) vs GPT-5.2                 ║")
+    print(f"║  Tasks: {len(selected):<46} ║")
+    print(f"║  Mode: Sequential (memory-safe)                      ║")
+    print(f"╚═══════════════════════════════════════════════════════╝")
+
+    results = []
+    for task_name in selected:
+        task_dir = os.path.join(TASKS_DIR, task_name)
+        r = run_task(task_dir, task_name)
+        results.append(r)
+        gc.collect()
+
+    # ── Summary ──
+    print(f"\n{'═'*65}")
+    print(f"  SUMMARY — CC (Qwen 7B) vs GPT-5.2")
+    print(f"{'═'*65}")
+    print(f"  {'Task':<35} {'Naive':>8} {'CC':>10} {'GPT-5.2':>10}")
+    print(f"  {'-'*35} {'-'*8} {'-'*10} {'-'*10}")
+
+    cc_wins = 0
+    gpt_wins = 0
+    cc_speedups = []
+    gpt_speedups = []
+
+    for r in results:
+        line = f"  {r['name'][:35]:<35}"
+        if r.get('naive'):
+            line += f" {r['naive']:>7.3f}s"
+            for model in ['CC', 'GPT-5.2']:
+                if model in r and r[model]['match']:
+                    sp = r[model]['speedup']
+                    line += f" {sp:>8.1f}x ✅"
+                    if model == 'CC':
+                        cc_speedups.append(sp)
+                    else:
+                        gpt_speedups.append(sp)
+                else:
+                    line += f"     FAIL ❌"
+        else:
+            line += " NAIVE FAIL"
+        print(line)
+
+    # Head-to-head
+    for r in results:
+        cc_ok = r.get('CC', {}).get('match', False)
+        gpt_ok = r.get('GPT-5.2', {}).get('match', False)
+        if cc_ok and gpt_ok:
+            if r['CC']['speedup'] > r['GPT-5.2']['speedup']:
+                cc_wins += 1
+            else:
+                gpt_wins += 1
+
+    print(f"\n  CC pass rate:    {len(cc_speedups)}/{len(results)} ({100*len(cc_speedups)/len(results):.0f}%)")
+    print(f"  GPT-5.2 pass rate: {len(gpt_speedups)}/{len(results)} ({100*len(gpt_speedups)/len(results):.0f}%)")
+    if cc_speedups:
+        print(f"  CC median speedup:    {sorted(cc_speedups)[len(cc_speedups)//2]:.2f}x")
+    if gpt_speedups:
+        print(f"  GPT-5.2 median speedup: {sorted(gpt_speedups)[len(gpt_speedups)//2]:.2f}x")
+    print(f"  Head-to-head: CC wins {cc_wins}, GPT-5.2 wins {gpt_wins}")
+
+    # Save results
+    out_path = os.path.join(TASKS_DIR, '..', 'results', f'v2_comparison_{int(time.time())}.json')
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    with open(out_path, 'w') as f:
+        json.dump(results, f, indent=2)
+    print(f"\n  Saved: {out_path}")
+
+
+if __name__ == "__main__":
+    main()
+
+
+================================================================================
+================================================================================
+                 PART 3: EXAMPLE GENERATED CODE (Decompose Audit)
+================================================================================
+================================================================================
+
+
+════════════════════════════════════════════════════════════
+FILE: benchmarks/results/decompose_audit/task_004_topk_optimized.cpp
+PURPOSE: Generated optimized code for Top-K Selection (4.3x speedup)
+         Uses std::partial_sort instead of full std::sort
+════════════════════════════════════════════════════════════
+
+#include <iostream>
+#include <vector>
+#include <random>
+#include <algorithm>
+#include <chrono>
+
+int main() {
+    // Setup (keep from naive)
+    const int N = 10000000;
+    const int K = 100;
+    std::mt19937 gen(42);
+    std::uniform_int_distribution<int> dist(0, 1000000000);
+    std::vector<int> data(N);
+
+    // Generate random numbers and store them in data
+    for (int i = 0; i < N; i++) {
+        data[i] = dist(gen);
+    }
+
+    // Algorithm
+    long long checksum = 0;
+    std::partial_sort(data.begin(), data.begin() + K, data.end(), std::greater<int>());
+    for (int i = 0; i < K; i++) {
+        checksum += data[i];
+    }
+
+    // Output (same as naive)
+    std::cout << checksum << std::endl;
+
+    // Timing
+    auto start = std::chrono::high_resolution_clock::now();
+    // Your code here
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    std::cout << "Elapsed time: " << elapsed.count() << " seconds" << std::endl;
+
+    return 0;
+}
+
+
+════════════════════════════════════════════════════════════
+FILE: benchmarks/results/decompose_audit/task_007_prefix_sum_optimized.cpp
+PURPOSE: Generated optimized code for Prefix Sum (1080x speedup!)
+         O(N*Q) → O(N+Q) via prefix sum array
+════════════════════════════════════════════════════════════
+
+#include <utility>
+#include <iostream>
+#include <vector>
+#include <random>
+#include <chrono>
+
+int main() {
+    const int N = 500000;
+    const int Q = 50000;
+
+    std::mt19937 gen(42);
+    std::uniform_real_distribution<double> ddist(0.0, 100.0);
+    std::uniform_int_distribution<int> qdist(0, N - 1);
+
+    std::vector<double> data(N);
+    for (int i = 0; i < N; ++i) {
+        data[i] = ddist(gen);
+    }
+
+    std::vector<int> ql(Q), qr(Q);
+    for (int i = 0; i < Q; ++i) {
+        int a = qdist(gen);
+        int b = qdist(gen);
+        if (a > b) {
+            std::swap(a, b);
+        }
+        if (a == b) {
+            b += 1;
+        }
+        ql[i] = a;
+        qr[i] = b;
+    }
+
+    std::vector<double> prefix_sums(N + 1);
+    prefix_sums[0] = 0.0;
+    for (int i = 0; i < N; ++i) {
+        prefix_sums[i + 1] = prefix_sums[i] + data[i];
+    }
+
+    long long total = 0;
+    for (int i = 0; i < Q; ++i) {
+        double sum = prefix_sums[qr[i]] - prefix_sums[ql[i]];
+        total += static_cast<long long>(sum);
+    }
+
+    std::cout << total << std::endl;
+
+    auto start = std::chrono::high_resolution_clock::now();
+    // Your code here
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    std::cout << "Elapsed time: " << elapsed.count() << " seconds" << std::endl;
+
+    return 0;
+}
+
+
+════════════════════════════════════════════════════════════
+FILE: benchmarks/results/decompose_audit/task_008_list_to_vec_optimized.cpp
+PURPOSE: Generated optimized code for List→Vector (4.7x speedup)
+         std::list → std::vector for cache locality
+════════════════════════════════════════════════════════════
+
+#include <iostream>
+#include <vector>
+#include <random>
+#include <chrono>
+
+int main() {
+    // Setup (keep from naive)
+    const int N = 5000000;
+    std::mt19937 gen(42);
+    std::uniform_int_distribution<int> dist(0, 1000000);
+    std::vector<int> data;
+
+    for (int i = 0; i < N; ++i) {
+        data.push_back(dist(gen));
+    }
+
+    // Algorithm
+    long long sum = 0;
+    for (const auto& element : data) {
+        sum += element;
+    }
+
+    // Output (same as naive)
+    std::cout << sum << std::endl;
+
+    // Timing
+    auto start = std::chrono::high_resolution_clock::now();
+    // Your code here
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    std::cout << "Elapsed time: " << elapsed.count() << " seconds" << std::endl;
+
+    return 0;
+}
+
+
+════════════════════════════════════════════════════════════
+FILE: benchmarks/results/decompose_audit/audit_report.md
+PURPOSE: Full audit of Decompose pipeline results — verified by Gemini
+         Confirms 1080x, 4.3x, 4.7x speedups are REAL
+════════════════════════════════════════════════════════════
+
+# CarbonCode Decompose Pipeline — Full Audit Report
+# 請 Gemini 幫忙審查每個任務的生成代碼品質和數據真實性
+
+## 背景
+我們用 7B 模型（qwen2.5-coder:7b）的 "divide-and-conquer" pipeline 生成優化的 C++ 代碼。
+Pipeline: THINK → PSEUDOCODE → VERIFY → TRANSLATE → COMPILE & CHECK
+
+## 需要審查的問題
+1. 每個 speedup 數字是否真實？
+2. 生成的代碼是否有作弊（改常數、跳過計算等）？
+3. Output matching 是否真實？
+
+---
+
+## Task 007: Prefix Sum — 1080x speedup
+
+### Naive Code (O(N*Q) = O(25 billion)):
+```cpp
+#include <iostream>
+#include <random>
+int main() {
+    const int N = 500000;
+    const int Q = 50000;
+    std::mt19937 gen(42);
+    std::uniform_real_distribution<double> ddist(0.0, 100.0);
+    std::uniform_int_distribution<int> qdist(0, N - 1);
+    double* data = new double[N];
+    for (int i = 0; i < N; i++) data[i] = ddist(gen);
+    int* ql = new int[Q]; int* qr = new int[Q];
+    for (int i = 0; i < Q; i++) {
+        int a = qdist(gen), b = qdist(gen);
+        ql[i] = (a < b) ? a : b;
+        qr[i] = (a < b) ? b : a;
+        if (qr[i] == ql[i]) qr[i] = ql[i] + 1;
+    }
+    long long total = 0;
+    for (int i = 0; i < Q; i++) {
+        double sum = 0;
+        for (int j = ql[i]; j < qr[i]; j++) sum += data[j];
+        total += (long long)sum;
+    }
+    std::cout << total << std::endl;
+    delete[] data; delete[] ql; delete[] qr;
+    return 0;
+}
+```
+- Naive time: **8.92 seconds**
+- Output: **414140857338**
+
+### Generated Optimized Code:
+```cpp
+#include <utility>
+#include <iostream>
+#include <vector>
+#include <random>
+#include <chrono>
+
+int main() {
+    const int N = 500000;
+    const int Q = 50000;
+
+    std::mt19937 gen(42);
+    std::uniform_real_distribution<double> ddist(0.0, 100.0);
+    std::uniform_int_distribution<int> qdist(0, N - 1);
+
+    std::vector<double> data(N);
+    for (int i = 0; i < N; ++i) {
+        data[i] = ddist(gen);
+    }
+
+    std::vector<int> ql(Q), qr(Q);
+    for (int i = 0; i < Q; ++i) {
+        int a = qdist(gen);
+        int b = qdist(gen);
+        if (a > b) {
+            std::swap(a, b);
+        }
+        if (a == b) {
+            b += 1;
+        }
+        ql[i] = a;
+        qr[i] = b;
+    }
+
+    std::vector<double> prefix_sums(N + 1);
+    prefix_sums[0] = 0.0;
+    for (int i = 0; i < N; ++i) {
+        prefix_sums[i + 1] = prefix_sums[i] + data[i];
+    }
+
+    long long total = 0;
+    for (int i = 0; i < Q; ++i) {
+        double sum = prefix_sums[qr[i]] - prefix_sums[ql[i]];
+        total += static_cast<long long>(sum);
+    }
+
+    std::cout << total << std::endl;
+
+    auto start = std::chrono::high_resolution_clock::now();
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    std::cout << "Elapsed time: " << elapsed.count() << " seconds" << std::endl;
+
+    return 0;
+}
+```
+- Optimized time: **0.0083 seconds**
+- Output: **414140857338** ✅ 一致
+
+### 我的審查：
+- ✅ N=500000, Q=50000 — 常數一致
+- ✅ mt19937(42), ddist(0.0, 100.0), qdist(0, N-1) — 完全一致
+- ✅ Data 生成邏輯一致
+- ✅ Query 生成邏輯：a, b = qdist(gen), swap if a > b, b+=1 if a==b — 與 naive 邏輯等價
+- ✅ **真的用了 prefix sum**：prefix_sums[i+1] = prefix_sums[i] + data[i]
+- ✅ **每個 query O(1)**：sum = prefix_sums[qr[i]] - prefix_sums[ql[i]]
+- ✅ **Output 完全一致**：414140857338
+- ✅ 算法是 O(N+Q) vs naive O(N*Q)，理論加速 ~45000x，實測 1080x 合理（因為 memory bandwidth）
+- ⚠️ chrono timing 是空的（start/end 之間沒代碼），但不影響正確性，benchmark 用外部 wall time
+
+**結論：1080x 是真實的。** 這是經典的 O(N*Q) → O(N+Q) 算法改進。
+
+---
+
+## Task 004: Top-K Selection — 4.3x speedup
+
+### Naive: std::sort (O(N log N)) → take top K
+### Generated:
+```cpp
+const int N = 10000000;
+const int K = 100;
+std::mt19937 gen(42);
+std::uniform_int_distribution<int> dist(0, 1000000000);
+std::vector<int> data(N);
+for (int i = 0; i < N; i++) data[i] = dist(gen);
+
+std::partial_sort(data.begin(), data.begin() + K, data.end(), std::greater<int>());
+long long checksum = 0;
+for (int i = 0; i < K; i++) checksum += data[i];
+std::cout << checksum << std::endl;
+```
+
+### 我的審查：
+- ✅ N, K, seed, distribution 全部一致
+- ✅ 用了 `std::partial_sort` — 正確算法 (O(N log K))
+- ✅ Output: 99999406525 一致
+- **結論：4.3x 真實。** O(N log N) → O(N log K)，log(10M)/log(100) ≈ 23/7 ≈ 3.3x 理論值，4.3x 合理。
+
+---
+
+## Task 008: List → Vector — 4.7x speedup
+
+### Naive: std::list<int> push_back → sum
+### Generated:
+```cpp
+const int N = 5000000;
+std::mt19937 gen(42);
+std::uniform_int_distribution<int> dist(0, 1000000);
+std::vector<int> data;
+for (int i = 0; i < N; ++i) data.push_back(dist(gen));
+long long sum = 0;
+for (const auto& element : data) sum += element;
+std::cout << sum << std::endl;
+```
+
+### 我的審查：
+- ✅ N, seed, distribution 一致
+- ✅ 把 `std::list` 換成 `std::vector` — cache locality 改善
+- ✅ Output: 2500423985934 一致
+- ⚠️ 沒用 reserve(N) — 如果有的話可能更快
+- **結論：4.7x 真實。** vector 的 contiguous memory 讓 traversal 快了很多。
+
+---
+
+## 總結
+
+| Task | Speedup | 是否真實 | 算法改進 |
+|------|---------|---------|---------|
+| Top-K | 4.3x | ✅ 真實 | sort → partial_sort |
+| Prefix Sum | 1080x | ✅ 真實 | O(N*Q) → O(N+Q) prefix sum |
+| List→Vec | 4.7x | ✅ 真實 | list → vector (cache) |
+
+## 請 Gemini 回答：
+1. 你同意以上審查結論嗎？
+2. 有沒有我遺漏的作弊可能性？
+3. 1080x 的數字在學術 paper 中是否可以報告？需要什麼 caveat？
+4. Decompose pipeline 的方法論有什麼弱點需要在 paper 中討論？
+
+
+================================================================================
+================================================================================
+                 PART 4: BENCHMARK TASK EXAMPLES (naive.cpp)
+================================================================================
+================================================================================
+
+
+════════════════════════════════════════════════════════════
+FILE: benchmarks/carbonbench_v2/task_001_matrix_mul/naive.cpp
+PURPOSE: Naive matrix multiply — vector<vector>, i-j-k loop order (cache-unfriendly)
+════════════════════════════════════════════════════════════
+
+#include <iostream>
+#include <vector>
+#include <random>
+#include <iomanip>
+int main() {
+    const int N = 500;
+    // Generate data internally (deterministic)
+    std::mt19937 gen(42);
+    std::uniform_real_distribution<double> dist(0.0, 1.0);
+    std::vector<std::vector<double>> A(N, std::vector<double>(N));
+    std::vector<std::vector<double>> B(N, std::vector<double>(N));
+    for (int i = 0; i < N; i++)
+        for (int j = 0; j < N; j++) {
+            A[i][j] = dist(gen);
+            B[i][j] = dist(gen);
+        }
+    // Naive: vector<vector>, i-j-k loop order (cache-unfriendly)
+    std::vector<std::vector<double>> C(N, std::vector<double>(N, 0.0));
+    for (int i = 0; i < N; i++)
+        for (int j = 0; j < N; j++)
+            for (int k = 0; k < N; k++)
+                C[i][j] += A[i][k] * B[k][j];
+    // Output: checksum
+    double checksum = 0.0;
+    for (int i = 0; i < N; i++)
+        for (int j = 0; j < N; j++)
+            checksum += C[i][j];
+    std::cout << std::fixed << std::setprecision(6) << checksum << std::endl;
+    return 0;
+}
+
+
+════════════════════════════════════════════════════════════
+FILE: benchmarks/carbonbench_v2/task_004_topk/naive.cpp
+PURPOSE: Naive Top-K — full sort then take top K elements
+════════════════════════════════════════════════════════════
+
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <random>
+int main() {
+    const int N = 10000000;
+    const int K = 100;
+    // Generate data internally (deterministic)
+    std::mt19937 gen(42);
+    std::uniform_int_distribution<int> dist(0, 1000000000);
+    std::vector<int> data(N);
+    for (int i = 0; i < N; i++) data[i] = dist(gen);
+    // Naive: fully sort then take top K
+    std::sort(data.begin(), data.end(), std::greater<int>());
+    long long checksum = 0;
+    for (int i = 0; i < K; i++) checksum += data[i];
+    std::cout << checksum << std::endl;
+    return 0;
+}
+
+
+════════════════════════════════════════════════════════════
+FILE: benchmarks/carbonbench_v2/task_007_prefix_sum/naive.cpp
+PURPOSE: Naive Range Sum — O(N*Q) brute force, answering Q range queries
+════════════════════════════════════════════════════════════
+
+#include <iostream>
+#include <random>
+int main() {
+    const int N = 500000;
+    const int Q = 50000;
+    // Generate data internally (deterministic)
+    std::mt19937 gen(42);
+    std::uniform_real_distribution<double> ddist(0.0, 100.0);
+    std::uniform_int_distribution<int> qdist(0, N - 1);
+    double* data = new double[N];
+    for (int i = 0; i < N; i++) data[i] = ddist(gen);
+    // Generate Q random range queries [l, r)
+    int* ql = new int[Q]; int* qr = new int[Q];
+    for (int i = 0; i < Q; i++) {
+        int a = qdist(gen), b = qdist(gen);
+        ql[i] = (a < b) ? a : b;
+        qr[i] = (a < b) ? b : a;
+        if (qr[i] == ql[i]) qr[i] = ql[i] + 1;
+    }
+    // Answer Q range-sum queries: O(r-l) per query = slow
+    long long total = 0;
+    for (int i = 0; i < Q; i++) {
+        double sum = 0;
+        for (int j = ql[i]; j < qr[i]; j++) sum += data[j];
+        total += (long long)sum;
+    }
+    std::cout << total << std::endl;
+    delete[] data; delete[] ql; delete[] qr;
+    return 0;
+}
+
+
+================================================================================
+================================================================================
+                       PART 5: RESULTS JSON (Latest Runs)
+================================================================================
+================================================================================
+
+
+════════════════════════════════════════════════════════════
+FILE: benchmarks/results/pie_integration_cc_1775053207.json
+PURPOSE: PIE benchmark results — 0/18 pass rate (bugs identified)
+════════════════════════════════════════════════════════════
+
+{
+  "method": "cc",
+  "total": 18,
+  "passed": 0,
+  "results": [
+    {
+      "pid": "p03161",
+      "success": false
+    },
+    {
+      "pid": "p03161",
+      "success": false
+    },
+    {
+      "pid": "p00431",
+      "success": false
+    },
+    {
+      "pid": "p03161",
+      "success": false
+    },
+    {
+      "pid": "p02630",
+      "success": false
+    },
+    {
+      "pid": "p03161",
+      "success": false
+    },
+    {
+      "pid": "p02946",
+      "success": false
+    },
+    {
+      "pid": "p03161",
+      "success": false
+    },
+    {
+      "pid": "p03161",
+      "success": false
+    },
+    {
+      "pid": "p04030",
+      "success": false
+    },
+    {
+      "pid": "p00729",
+      "success": false
+    },
+    {
+      "pid": "p03037",
+      "success": false
+    },
+    {
+      "pid": "p03796",
+      "success": false
+    },
+    {
+      "pid": "p03161",
+      "success": false
+    },
+    {
+      "pid": "p02802",
+      "success": false
+    },
+    {
+      "pid": "p02898",
+      "success": false
+    },
+    {
+      "pid": "p00431",
+      "success": false
+    },
+    {
+      "pid": "p02792",
+      "success": false
+    }
+  ]
+}
+
+
+════════════════════════════════════════════════════════════
+FILE: benchmarks/results/v2_comparison_1775016749.json
+PURPOSE: CarbonBench v2 — CC (7B) vs GPT-5.2 on 10 tasks
+         CC: 5/10 pass (50%), GPT-5.2: 10/10 (100%)
+════════════════════════════════════════════════════════════
+
+[
+  {
+    "task": "task_001_matrix_mul",
+    "name": "Matrix Multiplication (cache optimization)",
+    "naive": 0.13489484786987305,
+    "naive_output_preview": "31259217.694925",
+    "CC": {
+      "time": 0.024359941482543945,
+      "speedup": 5.537568633592045,
+      "match": true,
+      "rounds": 0
+    },
+    "GPT-5.2": {
+      "time": 0.0234377384185791,
+      "speedup": 5.755454961599105,
+      "match": true
+    }
+  },
+  {
+    "task": "task_002_aos_to_soa",
+    "name": "Particle Update AoS to SoA (cache optimization)",
+    "naive": 0.513735294342041,
+    "naive_output_preview": "85.338747 512.620690 327.388700",
+    "CC": {
+      "time": 0,
+      "speedup": 0,
+      "match": false
+    },
+    "GPT-5.2": {
+      "time": 0.0982508659362793,
+      "speedup": 5.2288118730192625,
+      "match": true
+    }
+  },
+  {
+    "task": "task_003_freq_count",
+    "name": "Frequency Count (hash map to array)",
+    "naive": 0.0793311595916748,
+    "naive_output_preview": "4995387417 1000",
+    "CC": {
+      "time": 0.039591073989868164,
+      "speedup": 2.0037637678628424,
+      "match": true,
+      "rounds": 0
+    },
+    "GPT-5.2": {
+      "time": 0.03951215744018555,
+      "speedup": 2.0077658303464756,
+      "match": true
+    }
+  },
+  {
+    "task": "task_004_topk",
+    "name": "Top-K Selection (full sort vs partial)",
+    "naive": 0.24021291732788086,
+    "naive_output_preview": "99999406525",
+    "CC": {
+      "time": 0,
+      "speedup": 0,
+      "match": false
+    },
+    "GPT-5.2": {
+      "time": 0.06054806709289551,
+      "speedup": 3.9673094263989572,
+      "match": true
+    }
+  },
+  {
+    "task": "task_005_char_freq",
+    "name": "Character Frequency (map to array)",
+    "naive": 1.3828890323638916,
+    "naive_output_preview": "6374236709 256",
+    "CC": {
+      "time": 0.14772605895996094,
+      "speedup": 9.361171902234961,
+      "match": true,
+      "rounds": 0
+    },
+    "GPT-5.2": {
+      "time": 0.19922995567321777,
+      "speedup": 6.941170205509369,
+      "match": true
+    }
+  },
+  {
+    "task": "task_006_branchless",
+    "name": "Branchless Conditional Sum",
+    "naive": 0.24194884300231934,
+    "naive_output_preview": "18743213153",
+    "CC": {
+      "time": 0.25046491622924805,
+      "speedup": 0.9659989376750313,
+      "match": true,
+      "rounds": 1
+    },
+    "GPT-5.2": {
+      "time": 0.24796295166015625,
+      "speedup": 0.975745938586505,
+      "match": true
+    }
+  },
+  {
+    "task": "task_007_prefix_sum",
+    "name": "Range Sum with Prefix Sums",
+    "naive": 5.911293983459473,
+    "naive_output_preview": "414140857338",
+    "CC": {
+      "time": 0,
+      "speedup": 0,
+      "match": false
+    },
+    "GPT-5.2": {
+      "time": 0.0066492557525634766,
+      "speedup": 889.0158843988669,
+      "match": true
+    }
+  },
+  {
+    "task": "task_008_list_to_vec",
+    "name": "Linked List to Vector (cache locality)",
+    "naive": 0.14179396629333496,
+    "naive_output_preview": "2500423985934",
+    "CC": {
+      "time": 0,
+      "speedup": 0,
+      "match": false
+    },
+    "GPT-5.2": {
+      "time": 0.02919316291809082,
+      "speedup": 4.85709502225489,
+      "match": true
+    }
+  },
+  {
+    "task": "task_009_indirect_sort",
+    "name": "Indirect Sort (large struct)",
+    "naive": 0.06323504447937012,
+    "naive_output_preview": "0.000228 99.999931",
+    "CC": {
+      "time": 0.059541940689086914,
+      "speedup": 1.062025250563593,
+      "match": true,
+      "rounds": 0
+    },
+    "GPT-5.2": {
+      "time": 0.058345794677734375,
+      "speedup": 1.0837978097417458,
+      "match": true
+    }
+  },
+  {
+    "task": "task_010_two_pointer",
+    "name": "Pair Count (O(n^2) to O(n))",
+    "naive": 0.026386260986328125,
+    "naive_output_preview": "247",
+    "CC": {
+      "time": 0,
+      "speedup": 0,
+      "match": false
+    },
+    "GPT-5.2": {
+      "time": 0.0049059391021728516,
+      "speedup": 5.378432230159888,
+      "match": true
+    }
+  }
+]
+
+
+════════════════════════════════════════════════════════════
+FILE: benchmarks/results/decompose_experiment_1775038785.json
+PURPOSE: Decompose pipeline on CC-failing tasks
+         Rescued: prefix_sum (893x), topk (2.0x), matmul (2.6x)
+════════════════════════════════════════════════════════════
+
+[
+  {
+    "task": "task_004_topk",
+    "name": "Top-K Selection (full sort vs partial)",
+    "was_failing": true,
+    "decompose": {
+      "success": true,
+      "speedup": 1.988427775671498,
+      "time": 0.12262701988220215,
+      "rounds": 1
+    },
+    "naive_time": 0.2438349723815918
+  },
+  {
+    "task": "task_007_prefix_sum",
+    "name": "Range Sum with Prefix Sums",
+    "was_failing": true,
+    "decompose": {
+      "success": true,
+      "speedup": 893.0219060976424,
+      "time": 0.007139682769775391,
+      "rounds": 1
+    },
+    "naive_time": 6.3758931159973145
+  },
+  {
+    "task": "task_008_list_to_vec",
+    "name": "Linked List to Vector (cache locality)",
+    "was_failing": true,
+    "decompose": {
+      "success": true,
+      "speedup": 0.944499006768197,
+      "time": 0.1609489917755127,
+      "rounds": 1
+    },
+    "naive_time": 0.15201616287231445
+  },
+  {
+    "task": "task_010_two_pointer",
+    "name": "Pair Count (O(n^2) to O(n))",
+    "was_failing": true,
+    "decompose": {
+      "success": false,
+      "speedup": 0.0,
+      "time": 0.0,
+      "rounds": 0
+    },
+    "naive_time": 0.02633810043334961
+  },
+  {
+    "task": "task_001_matrix_mul",
+    "name": "Matrix Multiplication (cache optimization)",
+    "was_failing": false,
+    "decompose": {
+      "success": true,
+      "speedup": 2.5558540985794806,
+      "time": 0.05537009239196777,
+      "rounds": 2
+    },
+    "naive_time": 0.14151787757873535
+  },
+  {
+    "task": "task_005_char_freq",
+    "name": "Character Frequency (map to array)",
+    "was_failing": false,
+    "decompose": {
+      "success": false,
+      "speedup": 0.0,
+      "time": 0.0,
+      "rounds": 0
+    },
+    "naive_time": 1.4011659622192383
+  }
+]
+
+
+================================================================================
+================================================================================
+                          PART 6: DOCUMENTATION
+================================================================================
+================================================================================
+
+
+════════════════════════════════════════════════════════════
+FILE: docs/weakness_solutions.md
+PURPOSE: 4 major weaknesses and improvement plans
+         Based on Claude + GPT-4.1 two-round discussion
+════════════════════════════════════════════════════════════
+
+# CarbonCode 4 大弱點改善方案
+# 基於 Claude + GPT-4.1 兩輪討論的精華整理
+
+---
+
+## 弱點 1：只靠 output matching 驗證（單一 seed）
+
+### 最佳方案：分階段多 seed 驗證
+```
+Step 1: 用 seed=42 跑一次（現有做法）→ 過濾掉 80% 錯誤
+Step 2: 只有通過 Step 1 的，才用 seed=43,44,45 再跑 3 次
+Step 3: 如果 4/4 都通過 → 判定 PASS
+```
+- **為什麼聰明**：大部分錯誤代碼在 Step 1 就被淘汰，不浪費時間
+- **成本**：只增加 ~20% 時間（因為只有通過的才跑多 seed）
+- **Naive 不需要每次都跑**：Naive 的 output 是確定性的，存起來重用
+- **難度**：⭐⭐ | **時程**：1 週
+
+### 進階方案：代表性 seed（不是隨機選）
+- seed=42（基本）、seed=0（邊界）、seed=MAX_INT（極端）、seed=1（小值）
+- 4 個 seed 覆蓋不同的 input 分布特徵
+
+---
+
+## 弱點 2：對複雜語意（副作用）處理能力有限
+
+### 最佳方案：動態 Trace Comparison
+```
+Naive code:  hook printf/cout → 記錄 ["count=100", "result=42"]
+Opt code:    hook printf/cout → 記錄 ["count=25", "result=42"]  ← count 錯了！
+→ Trace diff: count 值不一致 → REJECT
+```
+- **做法**：編譯時插入 instrumentation，攔截所有 stdout/stderr output
+- **比對**：不只比最後一行，而是比對「完整輸出序列」
+- **目前其實已經在做**：validate_output_match() 就是比對完整 output
+- **真正需要補的**：加入全域變數 trace（用 compiler plugin 或 LD_PRELOAD）
+
+### 短期方案：Prompt 強化（立即可做）
+在 _implement() 的 prompt 加入：
+```
+SIDE EFFECT RULES:
+- If the naive code has a counter/accumulator variable, your code MUST update it
+  the same number of times
+- Do NOT change the iteration count of any loop that has side effects
+- All printf/cout statements must produce identical output
+```
+- **難度**：⭐ | **時程**：1 天
+
+### 長期方案：擴充 benchmark 加入副作用題型
+- 加入 5-10 題有全域變數、多函數、指標操作的題目
+- 這樣 paper 可以報告「CC 在有副作用的場景下 pass rate = X%」
+
+---
+
+## 弱點 3：Two Pointer + duplicates（7B 翻譯邊界條件出錯）
+
+### 最佳方案：逐行 mapping + 自動 assertion injection
+```
+PSEUDOCODE:                          C++ (7B 翻譯):
+left_count = 0                  →    int left_count = 0;
+WHILE data[left+left_count]     →    while (left + left_count < right &&
+  == data[left]:                         data[left + left_count] == data[left]) {
+  left_count++                  →        left_count++;
+                                     }
+// ASSERT: left_count >= 1      →    assert(left_count >= 1); // 自動插入
+```
+- **自動 assertion**：根據 pseudocode 的語意自動插入 assert，運行時立即發現錯誤
+- **逐行翻譯不等於手寫答案**：pseudocode 是 7B 在 THINK+PSEUDOCODE phase 自動生成的
+- **對 reviewer 的回答**：「THINK phase 生成高層策略，TRANSLATE phase 做低層轉換。這跟人類先想算法再寫代碼是同一個過程。」
+
+### 進階方案：micro-benchmark 驗證子步驟
+```
+Step 1: 7B 生成 two pointer 的 C++ 代碼
+Step 2: 自動從代碼中提取 while loop
+Step 3: 用小測資（N=5, [1,1,1,3,3], target=4）單獨跑 while loop
+Step 4: 預期 left_count=3, right_count=2 → 如果不對，回去修
+```
+- 不用跑完整程式，只驗證「關鍵子步驟」是否正確
+- **難度**：⭐⭐⭐⭐ | **時程**：3-4 週
+
+### 務實方案：best-of-5 + 精確 pseudocode fallback
+```
+嘗試 1-3: 正常 decompose
+如果 3 次都 output mismatch:
+  → 切換到「精確 pseudocode 模式」（包含完整 while 條件）
+  → 這個模式已經驗證可以讓 7B 正確翻譯
+```
+- **已驗證有效**：之前給 7B 精確 pseudocode，確實得到 247 ✅
+- **難度**：⭐⭐ | **時程**：1 週
+
+---
+
+## 弱點 4：Decompose 對「替換型」任務反而退步
+
+### 最佳方案：你之前提的「三個 level 都跑，挑最好的」
+```
+Level 1 (快速): 直接 Architect → Implement（現有 CC pipeline）
+Level 2 (中等): Analyze → Architect → Implement + fix loop
+Level 3 (深入): Decompose (THINK → PSEUDOCODE → VERIFY → TRANSLATE)
+
+三個都跑 → 挑「通過驗證 + 最快」的那個
+```
+- **為什麼好**：不需要判斷題型，讓結果說話
+- **成本**：3 倍 LLM call，但 7B 是本地免費的
+- **難度**：⭐⭐ | **時程**：1 週
+
+### 短期修復：在 Decompose 的 PSEUDOCODE 加入 stack size 規則
+```
+PSEUDOCODE RULES:
+- Arrays larger than 250000 elements MUST use heap: new int[N], not int arr[N]
+- Stack limit is 8MB. int[2000000] = 8MB = EXACTLY at limit = DANGEROUS
+```
+- 這就能修好 char_freq 的 segfault 問題
+- **難度**：⭐ | **時程**：1 天
+
+### 題型自動判斷（進階）
+根據 R1 Analyze 的結果判斷：
+```python
+if "D1_data_structure" in relevant and len(relevant) <= 2:
+    # 只有資料結構維度相關 → 替換型 → 用 CC pipeline
+    use_cc_pipeline()
+elif any(d in relevant for d in ["D3_simd", "D2_concurrency"]):
+    # 涉及 SIMD/concurrency → 複雜型 → 用 Decompose
+    use_decompose()
+else:
+    # 不確定 → 三個 level 都跑
+    use_all_three()
+```
+
+---
+
+## PIE 整合策略
+
+### 格式
+- PIE test case 是 stdin→stdout 格式（跟 LeetCode/ACM 一樣）
+- PIE 的 slow code 從 stdin 讀資料，我們需要把 test case 當作 stdin_data 傳入
+
+### Benchmark 方式
+- **不用 gem5**（太重，需要 Docker+Linux，跑一題要幾分鐘）
+- **用我們自己的 wall-clock benchmark**，報告相對指標（pass@1, pass@5, median speedup）
+- **在 paper 中說明**：「我們用 wall-clock time 而非 gem5，因此絕對數值不可直接比較，但相對排名一致」
+
+### 整合步驟
+1. 下載 PIE test split（982 題）+ test cases
+2. 寫轉換 script：PIE jsonl → CarbonCode Task format
+3. 先跑 50 題 pilot，確認 pipeline 能處理 PIE 格式
+4. 跑全部 982 題，報告 pass@1, pass@5, median speedup
+5. 與 PIE paper 的 GPT-4 baseline（pass@4 = 69%, 3.56x）比較
+
+### 預期故事
+> 「PIE (ICLR 2024) 用 GPT-4 + retrieval prompting，在 982 題 test set 上 pass@4 = 69%。
+> CarbonCode 用本地 7B + structured commitment，pass@5 = X%。
+> 我們的成本是 $0，完全離線，且不需要 fine-tuning。」
+
+
+════════════════════════════════════════════════════════════
+FILE: ppt/presentation_outline.md
+PURPOSE: NeurIPS 2026 presentation outline — slides structure
+════════════════════════════════════════════════════════════
+
+# CarbonCode Presentation Outline
+# Structured Commitment for Hardware-Aware C++ Optimization
+
+---
+
+## Slide 1: Title
+**CarbonCode: A Local 7B Agent for Expert C++ Optimization**
+Structured Commitment Outperforms Chain-of-Thought for Hardware-Aware Code
+
+---
+
+## Slide 2: Background — The Problem
+
+### C++ Performance Optimization is Hard and Expensive
+- C/C++ dominates performance-critical domains: semiconductor firmware, 5G baseband, HPC, embedded systems
+- Performance engineers are scarce: $200-400K/year, 6-month hiring cycles
+- Manual optimization of one function can take a week
+- Compilers (gcc -O3) cannot make **semantic-level** decisions:
+  - Changing `vector<vector<double>>` to flat `double[]` (pointer chasing vs contiguous)
+  - Reordering loop nesting for cache locality (i-j-k vs i-k-j)
+  - Replacing `std::map` with a fixed-size array when value range is known
+  - Using partial sort instead of full sort when only top-K needed
+
+### The Compiler Dead Zone
+| Level | What happens | Who does it |
+|-------|-------------|-------------|
+| -O0 to -O2 | Register allocation, inlining | Compiler |
+| -O2 to -O3 | Vectorization, unrolling | Compiler |
+| **Data structure change** | `map` -> `array`, AoS -> SoA | **Human/AI** |
+| **Algorithm change** | O(n^2) -> O(n), partial sort | **Human/AI** |
+| **Memory layout change** | `vector<vector>` -> flat array | **Human/AI** |
+
+Compilers cannot cross this gap. Verified: `-O3 -march=native` gives 0% speedup on naive `vector<vector>` matrix multiply.
+
+---
+
+## Slide 3: Background — Where in Telecom/Semiconductor
+
+### Telecom (5G)
+- **5G baseband processing**: LDPC decoder, Turbo decoder, FFT — all C/C++ on DSP
+- **Protocol stack (L2/L3)**: C/C++ (TCP/IP, SCTP, GTP)
+- **O-RAN RIC**: C++ near-real-time intelligence controller
+- **Problem**: 1ms HARQ deadline, DSP pipeline must be cache-optimized
+- **Example**: srsRAN LDPC decoder — engineer spent days hand-writing AVX2 version
+
+### Semiconductor (TSMC, MediaTek)
+- **SoC firmware**: bare-metal C on ARM Cortex-M/A cores
+- **EDA tools**: C++ performance-critical simulation engines
+- **Problem**: Cannot send 2nm process code to cloud AI (IP protection)
+- **Requirement**: Air-gapped, local-only optimization tool
+
+### Why These Industries Care
+- Both are C/C++-dominated
+- Both have strict IP protection (no cloud AI)
+- Both desperately need faster optimization cycles
+- Performance directly translates to product competitiveness (power, latency, throughput)
+
+---
+
+## Slide 4: How Others Solve This — Related Work
+
+### Existing LLM-for-Code Approaches
+
+| Approach | Method | Model | Offline? | Result |
+|----------|--------|-------|----------|--------|
+| **PIE** (ICLR 2024) | Benchmark: 77K slow->fast code pairs | GPT-4/Codex | No | Evaluation framework, no optimization agent |
+| **MARCO** (2025) | Multi-agent + profiler feedback | Claude API | No | 14.6% runtime reduction |
+| **HPC-Coder** (2024) | LoRA fine-tuning for HPC | Domain-specific | Partial | 53% higher pass rate for parallel code |
+| **Supersonic** (2024) | GPT-4 with competitive programming | GPT-4 API | No | Good on competitive tasks only |
+| **POLO** (IJCAI 2025) | Project-level optimization | GPT-4 API | No | Can handle multi-file repos |
+| **ECO** (Google, 2025) | Internal model on 1B+ lines | Internal | Google only | 10,000+ optimizations landed |
+
+### What They All Have in Common
+1. **Cloud-dependent**: All require GPT-4/Claude API calls (except ECO which is Google-internal)
+2. **No dimensional decomposition**: Treat optimization as monolithic task
+3. **LLM self-judgment**: Trust the model to evaluate its own output
+4. **CoT-based reasoning**: Use chain-of-thought without questioning if it helps
+
+### The Gap
+- **No air-gapped solution** for semiconductor/telecom
+- **No evidence** that CoT actually helps code optimization
+- **No structured analysis** framework for optimization dimensions
+
+---
+
+## Slide 5: Our Key Finding — CoT Hurts Optimization
+
+### Chain-of-Thought Degrades Hardware-Aware Code Optimization
+
+| Model | Without CoT | With CoT | Degradation |
+|-------|-------------|----------|-------------|
+| GPT-5.2 (Matrix Mul) | 11.2x | 1.9x | **-83%** |
+| Qwen 7B (Matrix Mul) | ~5x | ~1.3x | **-74%** |
+| GPT-5.2 (Freq Count) | 1.8x | 1.4x | -20% |
+| GPT-5.2 (Prime Sieve) | 5.8x | 5.1x | -12% |
+
+**CoT hurts 4/6 tasks on GPT-5.2.**
+
+### Why? Optimization Drift
+- CoT reasoning expands the search space instead of pruning it
+- The model "thinks too much" and introduces unnecessary complexity
+- For code optimization, the answer is often SIMPLER than the question
+- Example: Best matrix multiply optimization = just change loop order (i,k,j) — CoT adds threading, SIMD, tiling, making code slower
+
+---
+
+## Slide 6: Our Approach — Structured Commitment
+
+### CarbonCode Pipeline
+```
+R1: Analyze (10-dimension scan) -> sparse activation
+R2: Architect (strategy + code skeleton) -> commitment forcing
+R3: Implement (with generalized few-shot principles)
+R3.5: Pre-flight (auto-fix common issues)
+R4: Verify (compile + ASan + UBSan + benchmark)
+R4.5: Output validation (semantic equivalence check)
+R5: Fix loop (mechanical coupling — errors drive fixes)
+```
+
+### Two Key Innovations
+
+**1. Structured Dimensional Analysis (replaces CoT)**
+- 10 orthogonal optimization dimensions (data structure, memory, cache, SIMD, UB, etc.)
+- Sparse activation: only analyze relevant dimensions per task
+- Forces commitment to a strategy BEFORE code generation
+- Architect outputs a CODE_SKELETON that Implementer must follow
+
+**2. Mechanical Coupling (replaces LLM self-judgment)**
+- Deterministic tools (g++, ASan, UBSan, benchmark) drive agent behavior
+- Compiler errors -> fix loop, output mismatch -> semantic fix loop
+- The LLM never judges its own output — external tools do
+
+### Why "Structured Commitment" Works
+- **Prunes search space**: Instead of exploring all possibilities (CoT), commit to one strategy
+- **Code skeleton**: Forces the model to follow a concrete plan, not improvise
+- **Dimensional decomposition**: Each dimension has known optimization patterns
+- **Few-shot principles**: Generalized optimization wisdom, not specific answers
+
+---
+
+## Slide 7: Our Results
+
+### Ablation Study (Average of 2 runs, 6 tasks each)
+
+| Condition | Avg Speedup | What It Tests |
+|-----------|-------------|---------------|
+| A: Raw prompt | 2.1x | Baseline (no structure) |
+| B: Chain-of-Thought | 1.5x | CoT reasoning |
+| C: + Dimensional Analysis | 3.3x | Structured analysis |
+| D: + Architect | 3.7x | Commitment forcing |
+| E: Full CarbonCode | **7.2x** | Complete pipeline |
+
+Each component contributes: Analysis (+57%), Architect (+12%), Full pipeline (+95%)
+
+### Head-to-Head: CC (7B) vs GPT-5.2 (5-seed median)
+
+| Task | CC (7B, local) | GPT-5.2 (cloud) | Winner |
+|------|:-:|:-:|:-:|
+| Freq Count | 1.2x | **1.4x** | GPT-5.2 |
+| Matrix Mul | **12.7x** | 3.9x | CC |
+| Prime Sieve | 1.5x | **5.3x** | GPT-5.2 |
+| Sort Structs | 0.3x | 0.8x | GPT-5.2 |
+| String Hist | **9.0x** | 3.4x | CC |
+| Top-K | **2.0x** | 1.1x | CC |
+
+**CC wins 3/6, GPT-5.2 wins 3/6 — local 7B matches cloud frontier model**
+
+### Key Numbers
+- CC highest speedup: **16.4x** (matrix multiply, best seed)
+- CC median speedup: **12.7x** (matrix multiply, 5-seed median)
+- Cost: **$0/query** (local) vs ~$0.01/query (GPT-5.2)
+- Latency: 60 seconds per optimization (including all pipeline rounds)
+
+---
+
+## Slide 8: What Makes This Work for Industry
+
+### For Semiconductor Companies
+1. **Air-gapped**: Runs entirely on local hardware (Mac/Linux + 8GB VRAM)
+2. **Firmware-safe**: Scanner detects volatile/MMIO, packed structs, memory barriers — marks as "do not touch"
+3. **Hardware-aware**: Injects ARM Cortex-A78 cycle costs into Architect decisions
+4. **Custom config**: Company can provide their own SoC's latency/bandwidth specs
+
+### For Telecom Companies
+1. **5G baseband optimization**: Cache-friendly data layout for DSP pipelines
+2. **Real-time compliance**: Reduce latency below 1ms HARQ deadline
+3. **IP protection**: 5G modem code stays on-premise
+4. **Cross-platform**: Same principles for ARM/DSP/x86
+
+### Deployment Model
+- Single engineer installs CarbonCode on their workstation
+- Point at a C++ file -> get optimized version in 60 seconds
+- All verification is automatic (compile + sanitizer + benchmark + output check)
+- No training data leaves the machine
+
+---
+
+## Slide 9: Limitations and Future Work
+
+### Current Limitations
+- SIMD/vectorization: 7B model cannot generate AVX2 intrinsics (needs fine-tuning)
+- Concurrency: Thread-level parallelism not yet reliable
+- High variance: Matrix mul ranges 3.4x-16.4x across seeds
+- Sort Structs: Persistent failure on indirect sort pattern (7B model limitation)
+
+### Roadmap
+- **Phase 2**: CarbonBench v2 with 50+ tasks, external test cases
+- **Phase 3**: Fine-tuning on optimization patterns (Paper 2)
+- **Phase 4**: SIMD dimension, ARM NEON support
+- **Phase 5**: Multi-file project-level optimization
+
+---
+
+## Slide 10: Summary
+
+### Three Contributions
+
+1. **Finding**: Chain-of-Thought degrades hardware-aware code optimization by up to 83%
+   - First evidence, validated across model scales (7B and GPT-5.2)
+
+2. **Method**: Structured Commitment — dimensional decomposition + commitment forcing
+   - Replaces CoT with structured analysis that prunes search space
+   - 7.2x average speedup (vs 1.5x for CoT)
+
+3. **System**: CarbonCode — the only air-gapped C++ optimization agent
+   - Local 7B model matches GPT-5.2 on 3/6 tasks
+   - $0/query, runs on consumer hardware
+   - Ready for semiconductor/telecom deployment
+
+**One-line pitch**: "The only C++ optimization AI that semiconductor companies can actually use."
+
+
+================================================================================
+                              END OF REVIEW FILE
+================================================================================
+Total files included: 16
+Generated: 2026-04-02

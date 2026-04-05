@@ -1,0 +1,197 @@
+═══════════════════════════════════════════════════════════════
+  CarbonStack 藍圖 — 半導體 AI 全棧研究計劃
+  Claude + Gemini 共同規劃
+═══════════════════════════════════════════════════════════════
+
+願景：用本地小模型 (7B) 自動化晶片開發全流程
+         從 spec → code → verify → tape-out
+
+═══════════════════════════════════════════════════════════════
+一、架構總覽
+═══════════════════════════════════════════════════════════════
+
+CarbonStack/
+├── README.md                 ← 藍圖、各項目關係
+├── shared/                   ← 共用基礎設施
+│   ├── llm/                  ← Ollama wrapper, prompt templates
+│   ├── compiler/             ← compile, sanitize, benchmark
+│   ├── preflight/            ← code check, IO opt, macro expand
+│   └── datasets/             ← 共用 dataset 工具
+│
+├── carboncode/               ← ★ #1 C++ 優化引擎（當前重點）
+├── carbon-translate/         ← #7 Python→C++ 翻譯
+├── carbon-legacy/            ← #6 Legacy Code 重構
+│
+├── carbon-verify/            ← #2 UVM Testbench 生成
+├── carbon-hls/               ← #3 HLS C++ 生成
+├── carbon-sim/               ← #5 Simulation 加速
+│
+├── carbon-firmware/          ← #4 Firmware/Driver 生成
+└── carbon-debug/             ← #8 Debug & Root Cause
+
+═══════════════════════════════════════════════════════════════
+二、各項目定位
+═══════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────┐
+│              CarbonStack 三層架構                     │
+├─────────────────────────────────────────────────────┤
+│                                                       │
+│  設計層 (Frontend)                                    │
+│  ┌──────────────┐  ┌──────────────┐                  │
+│  │ carbon-hls   │  │ carbon-      │                  │
+│  │ HLS C++ 生成 │  │ translate    │                  │
+│  │ NL→可合成C++ │  │ Python→C++  │                  │
+│  └──────┬───────┘  └──────┬───────┘                  │
+│         │                  │                          │
+│  優化層 (Core Engine) ← 所有產出的 code 都經過這裡    │
+│  ┌──────────────┐  ┌──────────────┐                  │
+│  │ ★carboncode  │  │ carbon-      │                  │
+│  │ C++ 優化引擎 │  │ legacy       │                  │
+│  │ PIE/CBench   │  │ 重構舊 code  │                  │
+│  └──────┬───────┘  └──────┬───────┘                  │
+│         │                  │                          │
+│  驗證層 (Verification)                                │
+│  ┌──────────────┐  ┌──────────────┐  ┌────────────┐ │
+│  │ carbon-      │  │ carbon-sim   │  │ carbon-    │ │
+│  │ verify       │  │ Simulation   │  │ debug      │ │
+│  │ UVM 生成     │  │ 加速         │  │ 自動除錯   │ │
+│  └──────────────┘  └──────────────┘  └────────────┘ │
+│                                                       │
+│  實作層 (Implementation)                              │
+│  ┌──────────────┐                                    │
+│  │ carbon-      │                                    │
+│  │ firmware     │                                    │
+│  │ Driver 生成  │                                    │
+│  └──────────────┘                                    │
+└─────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════
+三、每個項目的詳細資訊
+═══════════════════════════════════════════════════════════════
+
+#1 carboncode — C++ 優化引擎 ★★★ 當前重點
+   狀態：已有實驗結果
+   Dataset：PIE (978 tasks), CarbonBench v2 (10 tasks)
+   成果：78% pass@1, 1244x speedup (Decompose)
+   論文目標：NeurIPS 2026
+   產品化：air-gapped C++ optimization agent
+   相關論文：TRACE (2026), MARCO (2025), PIE (ICLR 2024)
+
+#2 carbon-verify — UVM Testbench 自動生成
+   狀態：概念階段
+   Dataset 需求：VerilogEval, OpenCores, PyUVM
+   產業價值：★★★★★ (驗證工程師 60% 時間在寫 testbench)
+   相關論文：AssertLLM (2024), AutoChip (2024)
+   與 #1 的關係：生成的 testbench 可用 carboncode 優化
+
+#3 carbon-hls — HLS C++ 生成
+   狀態：概念階段
+   Dataset 需求：Rosetta Benchmarks, Sodalite, Vivado HLS 範例
+   產業價值：★★★★ (MediaTek 大量用 HLS)
+   相關論文：ChipNeMo (NVIDIA, 2023)
+   與 #1 的關係：HLS 輸出的 C++ 可用 carboncode 優化效能
+
+#4 carbon-firmware — Firmware/Driver 自動生成
+   狀態：概念階段
+   Dataset 需求：Zephyr RTOS, Linux Kernel Drivers (I2C/SPI/UART)
+   產業價值：★★★★ (每個晶片都需要 driver)
+   與 #1 的關係：生成的 firmware C++ 可用 carboncode 優化
+
+#5 carbon-sim — Simulation 加速
+   狀態：概念階段
+   Dataset 需求：Gem5, Verilator traces
+   產業價值：★★★★★ (tape-out 前跑幾百次 sim，時間=錢)
+   與 #1 的關係：本質上就是 carboncode 應用在 simulator code
+
+#6 carbon-legacy — Legacy Code 重構
+   狀態：可從 carboncode 直接延伸
+   Dataset 需求：GitHub historical C/C++, MISRA compliance datasets
+   產業價值：★★★ (10 年以上老 code 維護)
+   與 #1 的關係：共用同一個 pipeline，只是 prompt 不同
+
+#7 carbon-translate — Python→C++ 翻譯
+   狀態：有理論基礎（TRACE paper）
+   Dataset 需求：MBPP (Python) mapped to C++, TRACE benchmark
+   產業價值：★★★ (Python 原型→C++ 產品化)
+   與 #1 的關係：翻譯後的 C++ 可用 carboncode 優化
+   學術角度：解決「多對一映射」問題（concept.md 的核心洞察）
+
+#8 carbon-debug — 自動 Debug & Root Cause
+   狀態：概念階段
+   Dataset 需求：Bugs2Fix, GitHub Issue/Commit pairs
+   產業價值：★★★★ (debug 佔設計時間 40%)
+   與 #1 的關係：debug 結果可用 carboncode 的 fix loop
+
+═══════════════════════════════════════════════════════════════
+四、優先順序
+═══════════════════════════════════════════════════════════════
+
+NOW (2026 Q2):
+  ★ #1 carboncode → NeurIPS 2026 paper (deadline May 4)
+
+NEXT (2026 Q3):
+  #6 carbon-legacy → 直接從 #1 延伸，改 prompt 就能做
+  #7 carbon-translate → 學術價值高（TRACE angle）
+
+THEN (2026 Q4):
+  #2 carbon-verify → 產業價值最高，需要 dataset
+  #8 carbon-debug → 可搭配 #2
+
+LATER (2027):
+  #3 carbon-hls → 需要半導體合作夥伴
+  #4 carbon-firmware → 需要 register map dataset
+  #5 carbon-sim → 需要 Gem5/Verilator 整合
+
+═══════════════════════════════════════════════════════════════
+五、共用的核心技術
+═══════════════════════════════════════════════════════════════
+
+所有 8 個項目共用的 shared/ 元件：
+
+1. LLM Interface (shared/llm/)
+   - Ollama wrapper, prompt templates
+   - 支援 Qwen2.5-Coder-7B, 未來換更大模型
+
+2. Compiler Pipeline (shared/compiler/)
+   - compile + ASan + UBSan + benchmark
+   - 確定性驗證（mechanical coupling）
+
+3. Preflight Checks (shared/preflight/)
+   - bits/stdc++.h 處理
+   - IO 優化
+   - 巨集展開
+   - Missing include 自動補
+
+4. Two-Pass Architecture (shared/pipeline/)
+   - Pass 1: 保持正確性
+   - Pass 2: 優化
+   - Fallback: 多路徑 preprocessing
+   - Speedup guard: 不比原始慢
+
+5. Verification Framework (shared/verify/)
+   - Multi-test-case validation
+   - Output semantic matching
+   - Checkpoint/resume
+
+═══════════════════════════════════════════════════════════════
+六、對教授的 pitch
+═══════════════════════════════════════════════════════════════
+
+「CarbonStack：用本地 7B 模型自動化半導體 C++ 開發全流程」
+
+- #1 carboncode 是核心引擎（已有 NeurIPS 級結果）
+- #2 + #3 是產業應用（UVM + HLS = 晶片設計自動化）
+- 全部 air-gapped，不需雲端，符合台積電/聯發科的安全要求
+- 一個框架，8 個產品，8 篇論文
+- 第一篇（NeurIPS 2026）= carboncode 的 benchmark + framework
+
+═══════════════════════════════════════════════════════════════
+七、Gemini 的建議
+═══════════════════════════════════════════════════════════════
+
+1. 用 Git Submodules 管理（每個 carbon-* 可獨立發布）
+2. CarbonCode 是 North Star — 所有其他項目產出的 code 都經過它優化
+3. 不要同時做 8 個 — 先把 #1 做到 NeurIPS 水準
+4. #6 (Legacy) 和 #7 (Translate) 最容易從 #1 延伸
+5. #2 (UVM) 是產業價值最高的，但需要 dataset

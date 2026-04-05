@@ -1,0 +1,261 @@
+Loading ForgeHLS data...
+
+============================================================
+  fir_filter
+  Worst: Lat=330753 | Best: Lat=422 | Gap: 784x
+  Code preserved: ✅ 100%
+  Pragmas: 7 → 7 (extra: 0)
+  PIPELINE activated: ✅
+  Good UNROLL: ❌
+    #pragma HLS PIPELINE OFF
+    → #pragma HLS PIPELINE II=1
+  Pragmas changed: 1/7
+
+============================================================
+  AES_Encrypt
+  Worst: Lat=1980417 | Best: Lat=65 | Gap: 30468x
+  Code preserved: ✅ 100%
+  Pragmas: 22 → 29 (extra: 7)
+  PIPELINE activated: ✅
+  Good UNROLL: ✅
+    #pragma HLS PIPELINE OFF
+    → #pragma HLS UNROLL factor=16
+    #pragma HLS UNROLL factor=1
+    → #pragma HLS ARRAY_PARTITION variable=sbox type=complete dim=1 factor=16
+    #pragma HLS PIPELINE OFF
+    → #pragma HLS PIPELINE II=1
+  Pragmas changed: 22/22
+
+============================================================
+  viterbi
+  Worst: Lat=5958602 | Best: Lat=45747 | Gap: 130x
+  Code preserved: ✅ 100%
+  Pragmas: 0 → 3 (extra: 9)
+  PIPELINE activated: ➡️ (already on or N/A)
+  Good UNROLL: ❌
+  Pragmas changed: 0/0
+
+============================================================
+  des_encrypt
+  Worst: Lat=36882 | Best: Lat=151 | Gap: 244x
+  Code preserved: ✅ 100%
+  Pragmas: 8 → 8 (extra: 0)
+  PIPELINE activated: ✅
+  Good UNROLL: ❌
+    #pragma HLS PIPELINE OFF
+    → #pragma HLS PIPELINE II=1
+    #pragma HLS UNROLL factor=1
+    → #pragma HLS PIPELINE II=1
+    #pragma HLS PIPELINE OFF
+    → #pragma HLS PIPELINE II=1
+  Pragmas changed: 3/8
+
+============================================================
+  adpcm
+  Worst: Lat=21390 | Best: Lat=1364 | Gap: 16x
+  Code preserved: ✅ 100%
+  Pragmas: 32 → 32 (extra: 0)
+  PIPELINE activated: ✅
+  Good UNROLL: ✅
+    #pragma HLS PIPELINE OFF
+    → #pragma HLS INTERFACE m_axi port=adpcm_in bundle=axim
+    #pragma HLS UNROLL factor=1
+    → #pragma HLS INTERFACE m_axi port=adpcm_out bundle=axim
+    #pragma HLS PIPELINE
+    → #pragma HLS INTERFACE s_axilite port=return bundle=control
+  Pragmas changed: 9/32
+
+============================================================
+  gemm_ncubed
+  Worst: Lat=2109569 | Best: Lat=967 | Gap: 2182x
+  Code preserved: ✅ 100%
+  Pragmas: 0 → 0 (extra: 7)
+  PIPELINE activated: ➡️ (already on or N/A)
+  Good UNROLL: ❌
+  Pragmas changed: 0/0
+
+============================================================
+  gemm_blocked
+  Worst: Lat=2707048 | Best: Lat=6209 | Gap: 436x
+  Code preserved: ✅ 100%
+  Pragmas: 0 → 0 (extra: 5)
+  PIPELINE activated: ➡️ (already on or N/A)
+  Good UNROLL: ❌
+  Pragmas changed: 0/0
+
+============================================================
+  matrix_multiply
+  Worst: Lat=5371757633 | Best: Lat=16814081 | Gap: 319x
+  Code preserved: ✅ 100%
+  Pragmas: 12 → 12 (extra: 0)
+  PIPELINE activated: ✅
+  Good UNROLL: ✅
+    #pragma HLS ARRAY_PARTITION variable=C type=cyclic dim=1 factor=1
+    → #pragma HLS ARRAY_PARTITION variable=B type=cyclic dim=2 factor=4
+    #pragma HLS ARRAY_PARTITION variable=B type=cyclic dim=2 factor=4
+    → #pragma HLS ARRAY_PARTITION variable=A type=cyclic dim=2 factor=1
+    #pragma HLS ARRAY_PARTITION variable=B type=cyclic dim=1 factor=1
+    → #pragma HLS PIPELINE II=1
+  Pragmas changed: 4/12
+
+============================================================
+  syrk
+  Worst: Lat=20180763601 | Best: Lat=5769387601 | Gap: 3x
+  Code preserved: ✅ 100%
+  Pragmas: 0 → 1 (extra: 7)
+  PIPELINE activated: ➡️ (already on or N/A)
+  Good UNROLL: ❌
+  Pragmas changed: 0/0
+
+============================================================
+  mvt
+  Worst: Lat=84016002 | Best: Lat=12014505 | Gap: 7x
+  Code preserved: ✅ 100%
+  Pragmas: 0 → 0 (extra: 5)
+  PIPELINE activated: ➡️ (already on or N/A)
+  Good UNROLL: ❌
+  Pragmas changed: 0/0
+
+============================================================
+  stencil_stencil2d
+  Worst: Lat=293796 | Best: Lat=802 | Gap: 366x
+  Code preserved: ✅ 100%
+  Pragmas: 11 → 11 (extra: 0)
+  PIPELINE activated: ✅
+  Good UNROLL: ✅
+    #pragma HLS PIPELINE OFF
+    → #pragma HLS PIPELINE II=1
+    #pragma HLS UNROLL factor=4
+    → #pragma HLS PIPELINE II=1
+    #pragma HLS PIPELINE OFF
+    → #pragma HLS UNROLL factor=4
+  Pragmas changed: 4/11
+
+============================================================
+  jacobi-2d
+  Worst: Lat=34605122401 | Best: Lat=1082905251 | Gap: 32x
+  Code preserved: ✅ 100%
+  Pragmas: 14 → 14 (extra: 0)
+  PIPELINE activated: ✅
+  Good UNROLL: ✅
+    #pragma HLS ARRAY_PARTITION variable=B type=cyclic dim=1 factor=8
+    → #pragma HLS ARRAY_PARTITION variable=A type=cyclic dim=2 factor=1
+    #pragma HLS ARRAY_PARTITION variable=A type=cyclic dim=2 factor=1
+    → #pragma HLS ARRAY_PARTITION variable=A type=cyclic dim=1 factor=8
+    #pragma HLS ARRAY_PARTITION variable=A type=cyclic dim=1 factor=8
+    → #pragma HLS PIPELINE II=1
+  Pragmas changed: 7/14
+
+============================================================
+  fdtd-2d
+  Worst: Lat=28504983001 | Best: Lat=1231492889 | Gap: 23x
+  Code preserved: ✅ 100%
+  Pragmas: 0 → 0 (extra: 4)
+  PIPELINE activated: ➡️ (already on or N/A)
+  Good UNROLL: ❌
+  Pragmas changed: 0/0
+
+============================================================
+  heat-3d
+  Worst: Lat=45462240251 | Best: Lat=587523126 | Gap: 77x
+  Code preserved: ✅ 100%
+  Pragmas: 0 → 1 (extra: 3)
+  PIPELINE activated: ➡️ (already on or N/A)
+  Good UNROLL: ❌
+  Pragmas changed: 0/0
+
+============================================================
+  dct
+  Worst: Lat=63971329 | Best: Lat=4156 | Gap: 15393x
+  Code preserved: ✅ 100%
+  Pragmas: 6 → 6 (extra: 0)
+  PIPELINE activated: ✅
+  Good UNROLL: ✅
+    #pragma HLS PIPELINE OFF
+    → #pragma HLS PIPELINE II=1
+    #pragma HLS UNROLL factor=1
+    → #pragma HLS UNROLL factor=4
+    #pragma HLS PIPELINE OFF
+    → #pragma HLS PIPELINE II=1
+  Pragmas changed: 4/6
+
+============================================================
+  black_scholes
+  Worst: Lat=238859 | Best: Lat=225 | Gap: 1062x
+  Code preserved: ✅ 100%
+  Pragmas: 7 → 7 (extra: 0)
+  PIPELINE activated: ✅
+  Good UNROLL: ✅
+    #pragma HLS PIPELINE OFF
+    → #pragma HLS PIPELINE II=1
+  Pragmas changed: 1/7
+
+============================================================
+  kmeans_clustering
+  Worst: Lat=877904 | Best: Lat=2147 | Gap: 409x
+  Code preserved: ✅ 100%
+  Pragmas: 17 → 17 (extra: 0)
+  PIPELINE activated: ✅
+  Good UNROLL: ✅
+    #pragma HLS ARRAY_PARTITION variable=centroids type=cyclic dim=2 factor=1
+    → #pragma HLS ARRAY_PARTITION variable=centroids type=cyclic dim=2 factor=4
+    #pragma HLS ARRAY_PARTITION variable=centroids type=cyclic dim=1 factor=4
+    → #pragma HLS ARRAY_PARTITION variable=points type=cyclic dim=2 factor=8
+    #pragma HLS ARRAY_PARTITION variable=points type=cyclic dim=2 factor=8
+    → #pragma HLS PIPELINE II=1
+  Pragmas changed: 8/17
+
+============================================================
+  fft_strided
+  Worst: Lat=411670 | Best: Lat=163881 | Gap: 3x
+  Code preserved: ✅ 100%
+  Pragmas: 10 → 10 (extra: 0)
+  PIPELINE activated: ✅
+  Good UNROLL: ✅
+    #pragma HLS ARRAY_PARTITION variable=img_twid type=cyclic dim=1 factor=1
+    → #pragma HLS ARRAY_PARTITION variable=img_twid type=cyclic dim=1 factor=8
+    #pragma HLS ARRAY_PARTITION variable=real_twid type=cyclic dim=1 factor=1
+    → #pragma HLS ARRAY_PARTITION variable=real_twid type=cyclic dim=1 factor=8
+    #pragma HLS PIPELINE OFF
+    → #pragma HLS PIPELINE II=2
+  Pragmas changed: 6/10
+
+============================================================
+  median_filter
+  Worst: Lat=19420 | Best: Lat=69 | Gap: 281x
+  Code preserved: ✅ 100%
+  Pragmas: 8 → 8 (extra: 0)
+  PIPELINE activated: ✅
+  Good UNROLL: ✅
+    #pragma HLS PIPELINE OFF
+    → #pragma HLS PIPELINE II=1
+    #pragma HLS UNROLL factor=1
+    → #pragma HLS UNROLL factor=2
+    #pragma HLS PIPELINE OFF
+    → #pragma HLS PIPELINE II=1
+  Pragmas changed: 3/8
+
+============================================================
+  histogram_equalization
+  Worst: Lat=43083 | Best: Lat=1918 | Gap: 22x
+  Code preserved: ✅ 100%
+  Pragmas: 10 → 10 (extra: 0)
+  PIPELINE activated: ✅
+  Good UNROLL: ✅
+    #pragma HLS PIPELINE OFF
+    → #pragma HLS PIPELINE II=1
+    #pragma HLS UNROLL factor=1
+    → #pragma HLS UNROLL factor=8
+    #pragma HLS PIPELINE OFF
+    → #pragma HLS PIPELINE II=1
+  Pragmas changed: 8/10
+
+============================================================
+  HLS Pragma v2 (Post-Process Merge) Results
+============================================================
+  Kernels: 20 total, 20 generated
+  Code preserved: 20/20 (100%) ← should be 100% now
+  Activated PIPELINE: 13/20 (65%)
+  Good UNROLL: 11/20 (55%)
+  Any pragma changed: 13/20 (65%)
+  Saved: /Users/william/Downloads/python_c/CarbonStack/carboncode/scripts/../../../check/hls_pragma_v2_1775255146.json

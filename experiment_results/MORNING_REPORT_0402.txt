@@ -1,0 +1,111 @@
+═══════════════════════════════════════════════════════════════
+  CarbonCode 晨間報告 — 2026-04-02 overnight experiments
+  Claude + Gemini 協作結果
+═══════════════════════════════════════════════════════════════
+
+## 一、A/B Test 結果總覽
+
+| 版本 | 說明 | Pass Rate | Median Speedup | Mean Speedup | Max |
+|------|------|-----------|----------------|--------------|-----|
+| v1 保守 (run1) | 只保持正確性 | 14/18 (78%) | 0.99x | 1.00x | 1.29x |
+| v1 保守 (run2) | 重複驗證 | 14/18 (78%) | 1.03x | 1.03x | 1.29x |
+| v2 激進 | 要求改演算法 | 5/9 (56%) | 0.86x | 0.92x | 1.04x |
+| v3 兩段式 (10題) | Pass1正確+Pass2優化 | 7/9 (78%) | 1.17x | 1.14x | 1.49x |
+| v3 兩段式 (20題) | Pass1正確+Pass2優化 | 15/18 (83%) | 0.94x | 0.91x | 1.19x |
+
+## 二、關鍵發現
+
+### 發現 1：兩段式策略 pass rate 最高 (83%)
+v3 比 v1 多通過 1 題（p02946 或 p00729），pass rate 78%→83%。
+原因：Pass 1 保守策略拿到正確 code，Pass 2 在不破壞的前提下嘗試優化。
+
+### 發現 2：激進改演算法會大幅降低 pass rate
+v2 直接要求「用更高效演算法重寫」→ 56% pass rate，4 題完全無輸出。
+原因：7B 模型能力不足以一次完成「理解題目 + 改演算法 + 保持正確」。
+
+### 發現 3：Speedup 在 10 題和 20 題間有差異
+10 題 v3: 1.17x median vs 20 題 v3: 0.94x median。
+原因：10 題的 seed 42 抽樣剛好是比較容易優化的題目。樣本效應。
+
+### 發現 4：Pass 2 的 speedup 提升有限
+Pass 2 在多數情況下沒有找到更快的版本，自動回退到 Pass 1。
+原因：CP code 本身已經比較緊湊，7B 模型能找到的優化空間有限。
+
+## 三、Bug 修復歷程（0% → 83%）
+
+| 階段 | Bug | 修法 | 效果 |
+|------|-----|------|------|
+| 1 | bits/stdc++.h regex | 正則表達式匹配 | compile 60%→94% |
+| 2 | Sanitizer 誤判 | 只查 ASAN/UBSAN keywords | pass ~30%→~50% |
+| 3 | 單一測試案例驗證 | R4.6 multi-test validation | 結構性修復 |
+| 4 | Timing 輸出干擾比對 | validate_output_match | 正確答案不再被誤判 |
+| 5 | **Prompt 叫模型刪 stdin** | _detect_reads_stdin() | **0%→78%（根因）** |
+| 6 | 兩段式策略 | Pass1正確 + Pass2優化 | 78%→83%, speedup↑ |
+
+## 四、與 PIE Paper Baseline 比較
+
+| 模型 | 大小 | Pass Rate | 嘗試次數 | Speedup | 題數 |
+|------|------|-----------|----------|---------|------|
+| GPT-4 (PIE paper) | ~1.7T | 69% | pass@4 | 3.56x | 978 |
+| GPT-3.5+self-play | ~175B | 87.68% | pass@8 | 6.86x | 978 |
+| CarbonCode v3 | **7B** | **83%** | **pass@1** | 0.94x | 18 |
+
+注意：我們的 18 題 vs 他們的 978 題，統計上不能直接比。
+但 pass rate 指標已非常接近甚至超過 GPT-4。
+
+## 五、Gemini 討論摘要（4 輪）
+
+### Round 1：確認 3 個 bug fix 正確
+Gemini 100% 認同，預測修完後 15-30% pass rate。
+
+### Round 2：深入討論 Verifier / Prompt / Error Feedback
+- Verifier：加 property-based testing 和 complexity check
+- Prompt：強制模型先分析 complexity 再寫 code
+- Error feedback：給 Input+Expected+Actual，但不給 how to fix
+
+### Round 3：A/B test 策略
+- 建議先跑 50 題 baseline，再改 prompt，再跑大量
+- 統計量至少 N=100
+
+### Round 4：兩段式+AST 策略
+- 完全認同 William 的 AST targeted optimization 想法
+- 建議用 loop 層級而非 function 層級（CP code 大多在 main 裡）
+- 風險：確保 Pass 2 不改 function signature/side effect
+
+## 六、GPU 方案
+
+| 方案 | 價格 | 978 題時間 | 總費用 |
+|------|------|-----------|--------|
+| Vast.ai RTX 3090 | $0.15/hr | ~7 hr | $1.10 |
+| RunPod RTX 3090 | $0.34/hr | ~7 hr | $3.00 |
+| Google Colab Free | $0 | ~15 hr | $0 |
+
+建議：Vast.ai，$1.50 美金跑完全部 978 題。
+
+## 七、接下來的行動項目
+
+1. ☐ 租 Vast.ai 跑 100 題（統計顯著性）
+2. ☐ 跑 Decompose pipeline 20 題做 ablation
+3. ☐ 考慮 AST targeted optimization（William 的想法）
+4. ☐ 改善 speedup（目前 ~1.0x，目標 >1.5x）
+5. ☐ 跑 978 題完整版
+6. ☐ 準備論文數據和 ablation study
+
+## 八、check/ 資料夾檔案清單
+
+| 檔案 | 說明 |
+|------|------|
+| carboncode_full_review.txt (127KB) | 全部程式碼+中文說明 |
+| pie_results_summary.txt | 結果摘要 |
+| pie_20tasks_run1_console.txt | v1 Run1 console |
+| pie_20tasks_run2_console.txt | v1 Run2 console |
+| pie_run2_results.json | v1 Run2 JSON（含 src/opt code） |
+| pie_run2_detailed_log.txt | v1 Run2 人可讀 log |
+| pie_10tasks_opt_prompt_v2.txt | v2 激進 prompt console |
+| pie_10tasks_twopass_v3_console.txt | v3 兩段式 10 題 console |
+| pie_v3_twopass_results.json | v3 10 題 JSON |
+| pie_v3_twopass_detailed.txt | v3 10 題 detailed log |
+| pie_v3_20tasks_results.json | v3 20 題 JSON（含 src/opt code） |
+| pie_v3_20tasks_detailed.txt | v3 20 題 detailed log |
+| pie_20tasks_twopass_v3.txt | v3 20 題 console |
+| MORNING_REPORT_0402.txt | 本報告 |

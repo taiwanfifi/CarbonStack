@@ -1,0 +1,57 @@
+{
+  "method": "both",
+  "model": "qwen2.5-coder:7b",
+  "seed": 42,
+  "total": 4,
+  "passed": 4,
+  "results": [
+    {
+      "pid": "p03161",
+      "success": true,
+      "src_time": 0.0033092498779296875,
+      "opt_time": 0.0034177303314208984,
+      "speedup": 0.9682595047087548,
+      "test_pass": "5/5",
+      "src_code": "#include <bits/stdc++.h>\n\nusing namespace std;\n\n\n\nint main() {\n\n\tint n,k;\n\n\tcin>>n>>k;\n\n\tvector<int>arr(n+1);\n\n\tfor(int i=1;i<=n;i++){\n\n\t\tcin>>arr[i];\n\n\t}\n\n\tvector<int>dp(n+1,INT_MAX);\n\n\tdp[1]=0;\n\n\tfor(int i=2;i<=n;i++){\n\n\t\tfor(int j=1;i-j>0&&j<=k;j++){\n\n\t\t\tif(dp[i-j]!=INT_MAX)dp[i]=min(dp[i],dp[i-j]+abs(arr[i]-arr[i-j]));\n\n\t\t}\n\n\t}\n\n\tcout<<dp[n]<<endl;\n\n\treturn 0;\n\n}",
+      "opt_code": "#include <climits>\n#include <iostream>\n#include <vector>\n#include <algorithm>\n#include <random>\n#include <chrono>\n#include <cmath>\n#include <numeric>\n#include <string>\n#include <unordered_map>\n#include <unordered_set>\n#include <memory>\n#include <functional>\n#include <set>\n#include <map>\n#include <queue>\n#include <stack>\n#include <deque>\n#include <list>\n#include <bitset>\n#include <cassert>\n#include <cstring>\n#include <iomanip>\n#include <sstream>\n\nusing namespace std;\n\nint main() {\n    ios_base::sync_with_stdio(false);\n    cin.tie(NULL);\n\n    int n, k;\n    cin >> n >> k;\n\n    int arr[n + 1];\n    for (int i = 1; i <= n; i++) {\n        cin >> arr[i];\n    }\n\n    int dp[n + 1];\n    fill(dp, dp + n + 1, INT_MAX);\n    dp[1] = 0;\n\n    for (int i = 2; i <= n; i++) {\n        for (int j = 1; i - j > 0 && j <= k; j++) {\n            if (dp[i - j] != INT_MAX) {\n                dp[i] = min(dp[i], dp[i - j] + abs(arr[i] - arr[i - j]));\n            }\n        }\n    }\n\n    cout << dp[n] << endl;\n\n    return 0;\n}",
+      "first_stdin": "3 1\n0 59 10\n",
+      "validation_cases_count": 5
+    },
+    {
+      "pid": "p03161",
+      "success": true,
+      "src_time": 0.0034170150756835938,
+      "opt_time": 0.0037260055541992188,
+      "speedup": 0.9170719221909394,
+      "test_pass": "5/5",
+      "src_code": "#include<iostream>\n\n#include<cstdio>\n\n#include<cmath>\n\n#include<cstring>\n\nusing namespace std;\n\nconst int N=100005;\n\nint f[N],a[N];\n\nint main()\n\n{\n\n\tint n,k;\n\n\tscanf(\"%d%d\",&n,&k);\n\n\tmemset(f,0x3f,sizeof(f));\n\n\tfor(int i=1;i<=n;i++) scanf(\"%d\",&a[i]);\n\n\tf[1]=0;\n\n\tfor(int i=2;i<=n;i++){\n\n\t\tfor(int j=1;j<=k;j++){\n\n\t\t\tif(i-j>=1) f[i]=min(f[i],f[i-j]+abs(a[i]-a[i-j]));\n\n\t\t}\n\n\t}\n\n\tprintf(\"%d\\n\",f[n]);\n\n}",
+      "opt_code": "#include<iostream>\n\n#include<cstdio>\n\n#include<cmath>\n\n#include<cstring>\n\nusing namespace std;\n\nconst int N=100005;\n\nint f[N],a[N];\n\nint main()\n\n{\n\n\tint n,k;\n\n\tscanf(\"%d%d\",&n,&k);\n\n\tmemset(f,0x3f,sizeof(f));\n\n\tfor(int i=1;i<=n;i++) scanf(\"%d\",&a[i]);\n\n\tf[1]=0;\n\n\tfor(int i=2;i<=n;i++){\n\n\t\tfor(int j=1;j<=k;j++){\n\n\t\t\tif(i-j>=1) f[i]=min(f[i],f[i-j]+abs(a[i]-a[i-j]));\n\n\t\t}\n\n\t}\n\n\tprintf(\"%d\\n\",f[n]);\n\n}",
+      "first_stdin": "3 1\n0 59 10\n",
+      "validation_cases_count": 5
+    },
+    {
+      "pid": "p00431",
+      "success": true,
+      "src_time": 0.0037670135498046875,
+      "opt_time": 0.0031659603118896484,
+      "speedup": 1.1898486331802094,
+      "test_pass": "5/5",
+      "src_code": "#include <vector>\n\n#include <iostream>\n\n#include <algorithm>\n\n \n\nusing namespace std;\n\n\n\nint N, A, B, used[100], rings[100]; vector<int> G[100];\n\n \n\nint rec(int pos)\n\n{\n\n    used[pos] = true; int ret = 1;\n\n     \n\n    for(int i = 0; i < rings[pos]; i++)\n\n    {\n\n        if(!used[G[pos][i]])\n\n        {\n\n            ret = max(ret, rec(G[pos][i]) + 1);\n\n        }\n\n    }\n\n     \n\n    used[pos] = false;\n\n     \n\n    return ret;\n\n}\n\n \n\nint main()\n\n{\n\n    int N, A, B;\n\n     \n\n    while(true)\n\n    {\n\n        scanf(\"%d\", &N);\n\n         \n\n        if(N == 0) { break; }\n\n \n\n        for(int i = 0; i < 100; i++)\n\n        {\n\n            used[i] = false;\n\n            rings[i] = 0;\n\n            G[i].clear();\n\n        }\n\n     \n\n        for(int i = 0; i < N; i++)\n\n        {\n\n            scanf(\"%d\", &A); A--;\n\n            scanf(\"%d\", &B); B--;\n\n         \n\n            G[A].push_back(B);\n\n            G[B].push_back(A);\n\n        }\n\n         \n\n        for(int i = 0; i < 100; i++)\n\n        {\n\n            rings[i] = G[i].size();\n\n        }\n\n         \n\n        int nodes = 0;\n\n         \n\n        for(int i = 0; i < 100; i++)\n\n        {\n\n            if(rings[i])\n\n            {\n\n                nodes++;\n\n            }\n\n        }\n\n     \n\n        int ret = 0;\n\n     \n\n        for(int i = 0; i < 100; i++)\n\n        {\n\n            ret = max(ret, rec(i));\n\n                 \n\n            if(ret == nodes) { break; }\n\n        }\n\n         \n\n        printf(\"%d\\n\", ret);\n\n    }\n\n     \n\n    return 0;\n\n}",
+      "opt_code": "#include <vector>\n#include <iostream>\n#include <algorithm>\n\nusing namespace std;\n\nint N, A, B;\nbool used[100];\nint rings[100];\nvector<int> G[100];\n\nint rec(int pos) {\n    if (used[pos]) return 0;\n    used[pos] = true;\n    int ret = 1;\n\n    for (int i = 0; i < rings[pos]; i++) {\n        ret = max(ret, rec(G[pos][i]) + 1);\n    }\n\n    used[pos] = false;\n\n    return ret;\n}\n\nint main() {\n    ios_base::sync_with_stdio(false);\n    cin.tie(NULL);\n\n    while (true) {\n        scanf(\"%d\", &N);\n\n        if (N == 0) { break; }\n\n        for (int i = 0; i < 100; i++) {\n            used[i] = false;\n            rings[i] = 0;\n            G[i].clear();\n        }\n\n        for (int i = 0; i < N; i++) {\n            scanf(\"%d\", &A); A--;\n            scanf(\"%d\", &B); B--;\n\n            G[A].push_back(B);\n            G[B].push_back(A);\n        }\n\n        for (int i = 0; i < 100; i++) {\n            rings[i] = G[i].size();\n        }\n\n        int nodes = 0;\n\n        for (int i = 0; i < 100; i++) {\n            if (rings[i]) {\n                nodes++;\n            }\n        }\n\n        int ret = 0;\n\n        for (int i = 0; i < 100; i++) {\n            ret = max(ret, rec(i));\n\n            if (ret == nodes) { break; }\n        }\n\n        printf(\"%d\\n\", ret);\n    }\n\n    return 0;\n}",
+      "first_stdin": "7\n2 3\n3 4\n1 4\n2 7\n5 9\n6 7\n1 7\n6\n1 3\n2 3\n3 4\n4 5\n1 5\n2 6\n7\n1 3\n2 4\n3 5\n4 6\n6 7\n2 3\n4 7\n0\n",
+      "validation_cases_count": 5
+    },
+    {
+      "pid": "p03161",
+      "success": true,
+      "src_time": 0.002585887908935547,
+      "opt_time": 0.0028731822967529297,
+      "speedup": 0.9000082980665505,
+      "test_pass": "5/5",
+      "src_code": "#include <bits/stdc++.h>\n\nusing namespace std;\n\ntypedef long long ll;\n\ntypedef long long int lli;\n\ntypedef long double ld;\n\nconst int oo = 1e9;\n\nconst int mod = 1e9+9;\n\n/*ll gcd(ll x, ll y){return (y ? gcd(y, x%y) : x); }\n\n*ll lcm(ll x, ll y){return x*(y/gcd(x,y));}\n\n*void exEuclid(int a, int b){\n\n\tif(b==0){x = 1; y=0; d=a; return ;}\n\n\texEuclid(b, a%b);\n\n\tint x1=y;\n\n\tint y1=x-(a/b)*y;\n\n\tx=x1;\n\n\ty=y1;\n\n} \n\n* */\n\n//===========================================================//\n\nconst int nax = 1e5+103;\n\nint n, k;\n\nint dp[nax];\n\nint a[nax];\n\nint f(int i){\n\n\tif (i==n-1) return 0;\n\n\tif(dp[i]!=-1) return dp[i];\n\n\tint ans = abs(a[i]-a[i+1])+f(i+1);\n\n\tfor(int j=2; j<=k; j++){\n\n\t\tif(i+j<n) ans = min(ans, abs(a[i]-a[i+j])+f(i+j));\n\n\t}\n\n\treturn dp[i]=ans;\n\n}\n\nint main(){\n\n\tcin>>n>>k;\n\n\tfor(int i=0; i<n; i++) cin>>a[i];\n\n\tmemset(dp, -1, sizeof dp);\n\n\tcout<<f(0)<<endl;\n\n\treturn 0;\n\n}",
+      "opt_code": "#include <iostream>\n\nusing namespace std;\n\ntypedef long long ll;\ntypedef long long int lli;\ntypedef long double ld;\n\nconst int oo = 1e9;\nconst int mod = 1e9 + 9;\n\nint n, k;\nint dp[100010];\nint a[100010];\n\nint f(int i) {\n    if (i == n - 1) return 0;\n    if (dp[i] != -1) return dp[i];\n    int ans = abs(a[i] - a[i + 1]) + f(i + 1);\n    for (int j = 2; j <= k && i + j < n; j++) {\n        ans = min(ans, abs(a[i] - a[i + j]) + f(i + j));\n    }\n    return dp[i] = ans;\n}\n\nint main() {\n    ios_base::sync_with_stdio(false);\n    cin.tie(NULL);\n\n    cin >> n >> k;\n    for (int i = 0; i < n; i++) cin >> a[i];\n    memset(dp, -1, sizeof dp);\n    cout << f(0) << endl;\n\n    return 0;\n}",
+      "first_stdin": "3 1\n0 59 10\n",
+      "validation_cases_count": 5
+    }
+  ]
+}

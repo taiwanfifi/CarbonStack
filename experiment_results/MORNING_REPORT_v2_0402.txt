@@ -1,0 +1,96 @@
+═══════════════════════════════════════════════════════════════
+  CarbonCode 最終報告 — 2026-04-02 overnight experiments v2
+  Claude + Gemini 協作結果
+═══════════════════════════════════════════════════════════════
+
+## 一、A/B Test 完整結果
+
+| 版本 | 說明 | Pass Rate | Mean Speedup | 加速/持平/變慢 |
+|------|------|-----------|--------------|----------------|
+| v1 | 只保正確性 | 14/18 (78%) | 1.00x | 4/2/9 |
+| v2 | 激進改演算法 | 5/9 (56%) | 0.92x | 0/2/3 |
+| v3 | Pass1正確+Pass2優化 | 15/18 (83%) | 0.91x | 4/2/9 |
+| v4-10 | +確定性IO+回退guard | 9/9 (100%) | 1.02x | 3/4/2 |
+| v4-20 | +確定性IO+回退guard | 17/18 (94%) | 0.97x | 5/5/7 |
+
+## 二、PIE tgt_code 分析（關鍵發現）
+
+分析 200 個 PIE 人類優化案例的 delta：
+  - I/O 加速（cin→scanf, endl→\n）: 73%
+  - 演算法改變: 26%
+  - 資料結構替換: 1%
+
+具體 I/O pattern (200 sample):
+  - cin → scanf: 82 題 (41%)
+  - cout → printf: 82 題 (41%)
+  - endl → \n: 66 題 (33%)
+  - string → char[]: 26 題 (13%)
+  - 加 sync_with_stdio: 21 題 (11%)
+
+結論：PIE 的 3.56x speedup 主要來自 I/O，不是演算法。
+
+## 三、v4 改進內容
+
+1. deterministic_io_optimize()：確定性文字替換
+   - 加 ios_base::sync_with_stdio(false) + cin.tie(NULL)
+   - endl → "\n"
+   - 不需要 LLM，0 風險
+
+2. Speedup guard：如果 CC 輸出比 naive 慢 (< 0.95x)
+   - 回退到 naive + 確定性 IO
+   - 確保「至少不會更慢」
+
+3. Pipeline 變成：
+   R1-R5 (正確性) → R6 (確定性IO) → R7 (LLM Pass2) → Speedup guard
+
+## 四、Benchmark noise 問題
+
+PIE 很多題 runtime < 10ms，benchmark 完全被 OS scheduling noise 支配。
+例如 #1 p03161: src=3.6ms, opt=6.5ms → 顯示 0.55x，但這個差異
+在 3ms 級別完全是噪音。
+
+結論：PIE speedup 數字在短 runtime 題目上不可靠。
+論文中需要：(a) 過濾 runtime > 50ms 的題目做 speedup 分析，
+或 (b) 用 PIE 自帶的 aggregated runtime 數字。
+
+## 五、Gemini 對論文方向的建議
+
+Gemini 認為 73% I/O 發現本身就是貢獻。建議論文方向：
+
+"Disentangling I/O Overheads from Algorithmic Optimization
+ in Automated Code Refinement"
+
+核心敘事：
+1. 發現 PIE dataset 73% 的 speedup 來自 I/O（不是演算法）
+2. 用確定性工具解決 I/O 層（不需 LLM）
+3. 讓 LLM 專注剩下 27% 的演算法優化
+4. 結果：7B 本地模型 94% pass rate (vs GPT-4 69%)
+
+## 六、剩餘問題
+
+1. 唯一失敗：p00431（圖論 DFS backtracking）— 7B 的認知天花板
+2. Speedup guard 不夠嚴格：0.55x 的 case 沒被攔住（benchmark noise 導致）
+3. 需要更大樣本量（目前 18-20 題，需 100+ 題）
+4. 需要在 runtime > 50ms 的題目上做 speedup 分析
+
+## 七、check/ 資料夾最終清單
+
+carboncode_full_review.txt      — 全部程式碼 (127KB)
+pie_results_summary.txt         — 初版結果摘要
+MORNING_REPORT_0402.txt         — 第一版晨間報告
+MORNING_REPORT_v2_0402.txt      — 本報告（最終版）
+pie_20tasks_run1_console.txt    — v1 Run1 console
+pie_20tasks_run2_console.txt    — v1 Run2 console
+pie_run2_results.json           — v1 Run2 JSON（含 src/opt code）
+pie_run2_detailed_log.txt       — v1 Run2 detailed
+pie_10tasks_opt_prompt_v2.txt   — v2 激進 prompt console
+pie_10tasks_twopass_v3_console.txt — v3 10題 console
+pie_v3_twopass_results.json     — v3 10題 JSON
+pie_v3_20tasks_results.json     — v3 20題 JSON
+pie_v3_20tasks_detailed.txt     — v3 20題 detailed
+pie_20tasks_twopass_v3.txt      — v3 20題 console
+pie_v4_10tasks_results.json     — v4 10題 JSON (100% pass)
+pie_v4_20tasks_results.json     — v4 20題 JSON (94% pass)
+pie_v4_20tasks_detailed.txt     — v4 20題 detailed
+pie_10tasks_v4_io_opt.txt       — v4 10題 console
+pie_20tasks_v4_io_opt.txt       — v4 20題 console

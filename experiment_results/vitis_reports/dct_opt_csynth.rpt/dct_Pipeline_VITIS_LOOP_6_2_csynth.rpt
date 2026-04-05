@@ -1,0 +1,198 @@
+
+
+================================================================
+== Vitis HLS Report for 'dct_Pipeline_VITIS_LOOP_6_2'
+================================================================
+* Date:           Sat Apr  4 13:49:34 2026
+
+* Version:        2025.2 (Build 6295257 on Nov 14 2025)
+* Project:        proj_dct_opt
+* Solution:       sol1 (Vivado IP Flow Target)
+* Product family: virtexuplus
+* Target device:  xcvu9p-flga2104-2-i
+
+
+================================================================
+== Performance Estimates
+================================================================
++ Timing: 
+    * Summary: 
+    +--------+----------+----------+------------+
+    |  Clock |  Target  | Estimated| Uncertainty|
+    +--------+----------+----------+------------+
+    |ap_clk  |  10.00 ns|  5.512 ns|     2.70 ns|
+    +--------+----------+----------+------------+
+
++ Latency: 
+    * Summary: 
+    +---------+---------+----------+----------+-----+-----+-------------------+
+    |  Latency (cycles) |  Latency (absolute) |  Interval |      Pipeline     |
+    |   min   |   max   |    min   |    max   | min | max |        Type       |
+    +---------+---------+----------+----------+-----+-----+-------------------+
+    |       10|       10|  0.100 us|  0.100 us|    0|    0|  loop pipeline stp|
+    +---------+---------+----------+----------+-----+-----+-------------------+
+
+    + Detail: 
+        * Instance: 
+        N/A
+
+        * Loop: 
+        +------------------+---------+---------+----------+-----------+-----------+------+----------+
+        |                  |  Latency (cycles) | Iteration|  Initiation Interval  | Trip |          |
+        |     Loop Name    |   min   |   max   |  Latency |  achieved |   target  | Count| Pipelined|
+        +------------------+---------+---------+----------+-----------+-----------+------+----------+
+        |- VITIS_LOOP_6_2  |        8|        8|         2|          1|          1|     8|       yes|
+        +------------------+---------+---------+----------+-----------+-----------+------+----------+
+
+
+
+================================================================
+== Utilization Estimates
+================================================================
+* Summary: 
++---------------------+---------+------+---------+---------+-----+
+|         Name        | BRAM_18K|  DSP |    FF   |   LUT   | URAM|
++---------------------+---------+------+---------+---------+-----+
+|DSP                  |        -|     -|        -|        -|    -|
+|Expression           |        -|     -|        0|      284|    -|
+|FIFO                 |        -|     -|        -|        -|    -|
+|Instance             |        -|    24|        0|      160|    -|
+|Memory               |        -|     -|        -|        -|    -|
+|Multiplexer          |        -|     -|        0|       36|    -|
+|Register             |        -|     -|       11|        -|    -|
++---------------------+---------+------+---------+---------+-----+
+|Total                |        0|    24|       11|      480|    0|
++---------------------+---------+------+---------+---------+-----+
+|Available SLR        |     1440|  2280|   788160|   394080|  320|
++---------------------+---------+------+---------+---------+-----+
+|Utilization SLR (%)  |        0|     1|       ~0|       ~0|    0|
++---------------------+---------+------+---------+---------+-----+
+|Available            |     4320|  6840|  2364480|  1182240|  960|
++---------------------+---------+------+---------+---------+-----+
+|Utilization (%)      |        0|    ~0|       ~0|       ~0|    0|
++---------------------+---------+------+---------+---------+-----+
+
++ Detail: 
+    * Instance: 
+    +-----------------------+--------------------+---------+----+---+----+-----+
+    |        Instance       |       Module       | BRAM_18K| DSP| FF| LUT| URAM|
+    +-----------------------+--------------------+---------+----+---+----+-----+
+    |mul_32s_32s_32_1_1_U1  |mul_32s_32s_32_1_1  |        0|   3|  0|  20|    0|
+    |mul_32s_32s_32_1_1_U2  |mul_32s_32s_32_1_1  |        0|   3|  0|  20|    0|
+    |mul_32s_32s_32_1_1_U3  |mul_32s_32s_32_1_1  |        0|   3|  0|  20|    0|
+    |mul_32s_32s_32_1_1_U4  |mul_32s_32s_32_1_1  |        0|   3|  0|  20|    0|
+    |mul_32s_32s_32_1_1_U5  |mul_32s_32s_32_1_1  |        0|   3|  0|  20|    0|
+    |mul_32s_32s_32_1_1_U6  |mul_32s_32s_32_1_1  |        0|   3|  0|  20|    0|
+    |mul_32s_32s_32_1_1_U7  |mul_32s_32s_32_1_1  |        0|   3|  0|  20|    0|
+    |mul_32s_32s_32_1_1_U8  |mul_32s_32s_32_1_1  |        0|   3|  0|  20|    0|
+    +-----------------------+--------------------+---------+----+---+----+-----+
+    |Total                  |                    |        0|  24|  0| 160|    0|
+    +-----------------------+--------------------+---------+----+---+----+-----+
+
+    * DSP: 
+    N/A
+
+    * Memory: 
+    N/A
+
+    * FIFO: 
+    N/A
+
+    * Expression: 
+    +----------------------+----------+----+---+----+------------+------------+
+    |     Variable Name    | Operation| DSP| FF| LUT| Bitwidth P0| Bitwidth P1|
+    +----------------------+----------+----+---+----+------------+------------+
+    |add_ln11_1_fu_347_p2  |         +|   0|  0|  39|          32|          32|
+    |add_ln11_2_fu_353_p2  |         +|   0|  0|  32|          32|          32|
+    |add_ln11_3_fu_359_p2  |         +|   0|  0|  32|          32|          32|
+    |add_ln11_4_fu_365_p2  |         +|   0|  0|  39|          32|          32|
+    |add_ln11_5_fu_371_p2  |         +|   0|  0|  32|          32|          32|
+    |add_ln11_fu_341_p2    |         +|   0|  0|  39|          32|          32|
+    |add_ln12_fu_331_p2    |         +|   0|  0|  13|           6|           6|
+    |add_ln6_fu_305_p2     |         +|   0|  0|  12|           4|           1|
+    |sum_fu_377_p2         |         +|   0|  0|  32|          32|          32|
+    |icmp_ln6_fu_299_p2    |      icmp|   0|  0|  12|           4|           5|
+    |ap_enable_pp0         |       xor|   0|  0|   2|           1|           2|
+    +----------------------+----------+----+---+----+------------+------------+
+    |Total                 |          |   0|  0| 284|         239|         238|
+    +----------------------+----------+----+---+----+------------+------------+
+
+    * Multiplexer: 
+    +-------------------------+----+-----------+-----+-----------+
+    |           Name          | LUT| Input Size| Bits| Total Bits|
+    +-------------------------+----+-----------+-----+-----------+
+    |ap_done_int              |   9|          2|    1|          2|
+    |ap_enable_reg_pp0_iter1  |   9|          2|    1|          2|
+    |ap_sig_allocacmp_j_1     |   9|          2|    4|          8|
+    |j_fu_76                  |   9|          2|    4|          8|
+    +-------------------------+----+-----------+-----+-----------+
+    |Total                    |  36|          8|   10|         20|
+    +-------------------------+----+-----------+-----+-----------+
+
+    * Register: 
+    +-------------------------+---+----+-----+-----------+
+    |           Name          | FF| LUT| Bits| Const Bits|
+    +-------------------------+---+----+-----+-----------+
+    |ap_CS_fsm                |  1|   0|    1|          0|
+    |ap_done_reg              |  1|   0|    1|          0|
+    |ap_enable_reg_pp0_iter1  |  1|   0|    1|          0|
+    |j_1_reg_450              |  4|   0|    4|          0|
+    |j_fu_76                  |  4|   0|    4|          0|
+    +-------------------------+---+----+-----+-----------+
+    |Total                    | 11|   0|   11|          0|
+    +-------------------------+---+----+-----+-----------+
+
+
+
+================================================================
+== Interface
+================================================================
+* Summary: 
++----------------------+-----+-----+------------+-----------------------------+--------------+
+|       RTL Ports      | Dir | Bits|  Protocol  |        Source Object        |    C Type    |
++----------------------+-----+-----+------------+-----------------------------+--------------+
+|ap_clk                |   in|    1|  ap_ctrl_hs|  dct_Pipeline_VITIS_LOOP_6_2|  return value|
+|ap_rst                |   in|    1|  ap_ctrl_hs|  dct_Pipeline_VITIS_LOOP_6_2|  return value|
+|ap_start              |   in|    1|  ap_ctrl_hs|  dct_Pipeline_VITIS_LOOP_6_2|  return value|
+|ap_done               |  out|    1|  ap_ctrl_hs|  dct_Pipeline_VITIS_LOOP_6_2|  return value|
+|ap_idle               |  out|    1|  ap_ctrl_hs|  dct_Pipeline_VITIS_LOOP_6_2|  return value|
+|ap_ready              |  out|    1|  ap_ctrl_hs|  dct_Pipeline_VITIS_LOOP_6_2|  return value|
+|zext_ln11             |   in|    6|     ap_none|                    zext_ln11|        scalar|
+|output_r_address0     |  out|    6|   ap_memory|                     output_r|         array|
+|output_r_ce0          |  out|    1|   ap_memory|                     output_r|         array|
+|output_r_we0          |  out|    1|   ap_memory|                     output_r|         array|
+|output_r_d0           |  out|   32|   ap_memory|                     output_r|         array|
+|cos_table_0_address0  |  out|    3|   ap_memory|                  cos_table_0|         array|
+|cos_table_0_ce0       |  out|    1|   ap_memory|                  cos_table_0|         array|
+|cos_table_0_q0        |   in|   32|   ap_memory|                  cos_table_0|         array|
+|cos_table_1_address0  |  out|    3|   ap_memory|                  cos_table_1|         array|
+|cos_table_1_ce0       |  out|    1|   ap_memory|                  cos_table_1|         array|
+|cos_table_1_q0        |   in|   32|   ap_memory|                  cos_table_1|         array|
+|cos_table_2_address0  |  out|    3|   ap_memory|                  cos_table_2|         array|
+|cos_table_2_ce0       |  out|    1|   ap_memory|                  cos_table_2|         array|
+|cos_table_2_q0        |   in|   32|   ap_memory|                  cos_table_2|         array|
+|cos_table_3_address0  |  out|    3|   ap_memory|                  cos_table_3|         array|
+|cos_table_3_ce0       |  out|    1|   ap_memory|                  cos_table_3|         array|
+|cos_table_3_q0        |   in|   32|   ap_memory|                  cos_table_3|         array|
+|cos_table_4_address0  |  out|    3|   ap_memory|                  cos_table_4|         array|
+|cos_table_4_ce0       |  out|    1|   ap_memory|                  cos_table_4|         array|
+|cos_table_4_q0        |   in|   32|   ap_memory|                  cos_table_4|         array|
+|cos_table_5_address0  |  out|    3|   ap_memory|                  cos_table_5|         array|
+|cos_table_5_ce0       |  out|    1|   ap_memory|                  cos_table_5|         array|
+|cos_table_5_q0        |   in|   32|   ap_memory|                  cos_table_5|         array|
+|cos_table_6_address0  |  out|    3|   ap_memory|                  cos_table_6|         array|
+|cos_table_6_ce0       |  out|    1|   ap_memory|                  cos_table_6|         array|
+|cos_table_6_q0        |   in|   32|   ap_memory|                  cos_table_6|         array|
+|cos_table_7_address0  |  out|    3|   ap_memory|                  cos_table_7|         array|
+|cos_table_7_ce0       |  out|    1|   ap_memory|                  cos_table_7|         array|
+|cos_table_7_q0        |   in|   32|   ap_memory|                  cos_table_7|         array|
+|input_r_load_7        |   in|   32|     ap_none|               input_r_load_7|        scalar|
+|input_r_load_6        |   in|   32|     ap_none|               input_r_load_6|        scalar|
+|input_r_load_5        |   in|   32|     ap_none|               input_r_load_5|        scalar|
+|input_r_load_4        |   in|   32|     ap_none|               input_r_load_4|        scalar|
+|input_r_load_3        |   in|   32|     ap_none|               input_r_load_3|        scalar|
+|input_r_load_2        |   in|   32|     ap_none|               input_r_load_2|        scalar|
+|input_r_load          |   in|   32|     ap_none|                 input_r_load|        scalar|
+|input_r_load_1        |   in|   32|     ap_none|               input_r_load_1|        scalar|
++----------------------+-----+-----+------------+-----------------------------+--------------+
+

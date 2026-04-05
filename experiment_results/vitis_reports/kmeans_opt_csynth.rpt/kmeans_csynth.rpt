@@ -1,0 +1,181 @@
+
+
+================================================================
+== Vitis HLS Report for 'kmeans'
+================================================================
+* Date:           Sat Apr  4 14:27:25 2026
+
+* Version:        2025.2 (Build 6295257 on Nov 14 2025)
+* Project:        proj_kmeans_opt
+* Solution:       sol1 (Vivado IP Flow Target)
+* Product family: virtexuplus
+* Target device:  xcvu9p-flga2104-2-i
+
+
+================================================================
+== Performance Estimates
+================================================================
++ Timing: 
+    * Summary: 
+    +--------+----------+----------+------------+
+    |  Clock |  Target  | Estimated| Uncertainty|
+    +--------+----------+----------+------------+
+    |ap_clk  |  10.00 ns|  5.888 ns|     2.70 ns|
+    +--------+----------+----------+------------+
+
++ Latency: 
+    * Summary: 
+    +---------+---------+----------+----------+-----+-----+---------+
+    |  Latency (cycles) |  Latency (absolute) |  Interval | Pipeline|
+    |   min   |   max   |    min   |    max   | min | max |   Type  |
+    +---------+---------+----------+----------+-----+-----+---------+
+    |       70|       70|  0.700 us|  0.700 us|   71|   71|       no|
+    +---------+---------+----------+----------+-----+-----+---------+
+
+    + Detail: 
+        * Instance: 
+        +-------------------------------------------+--------------------------------+---------+---------+----------+----------+-----+-----+-------------------+
+        |                                           |                                |  Latency (cycles) |  Latency (absolute) |  Interval |      Pipeline     |
+        |                  Instance                 |             Module             |   min   |   max   |    min   |    max   | min | max |        Type       |
+        +-------------------------------------------+--------------------------------+---------+---------+----------+----------+-----+-----+-------------------+
+        |grp_kmeans_Pipeline_VITIS_LOOP_8_1_fu_175  |kmeans_Pipeline_VITIS_LOOP_8_1  |       67|       67|  0.670 us|  0.670 us|    0|    0|  loop pipeline stp|
+        +-------------------------------------------+--------------------------------+---------+---------+----------+----------+-----+-----+-------------------+
+
+        * Loop: 
+        N/A
+
+
+
+================================================================
+== Utilization Estimates
+================================================================
+* Summary: 
++---------------------+---------+------+---------+---------+-----+
+|         Name        | BRAM_18K|  DSP |    FF   |   LUT   | URAM|
++---------------------+---------+------+---------+---------+-----+
+|DSP                  |        -|     -|        -|        -|    -|
+|Expression           |        -|     -|        -|        -|    -|
+|FIFO                 |        -|     -|        -|        -|    -|
+|Instance             |        -|    36|      121|     1216|    -|
+|Memory               |        -|     -|        -|        -|    -|
+|Multiplexer          |        -|     -|        0|      110|    -|
+|Register             |        -|     -|      389|        -|    -|
++---------------------+---------+------+---------+---------+-----+
+|Total                |        0|    36|      510|     1326|    0|
++---------------------+---------+------+---------+---------+-----+
+|Available SLR        |     1440|  2280|   788160|   394080|  320|
++---------------------+---------+------+---------+---------+-----+
+|Utilization SLR (%)  |        0|     1|       ~0|       ~0|    0|
++---------------------+---------+------+---------+---------+-----+
+|Available            |     4320|  6840|  2364480|  1182240|  960|
++---------------------+---------+------+---------+---------+-----+
+|Utilization (%)      |        0|    ~0|       ~0|       ~0|    0|
++---------------------+---------+------+---------+---------+-----+
+
++ Detail: 
+    * Instance: 
+    +-------------------------------------------+--------------------------------+---------+----+-----+------+-----+
+    |                  Instance                 |             Module             | BRAM_18K| DSP|  FF |  LUT | URAM|
+    +-------------------------------------------+--------------------------------+---------+----+-----+------+-----+
+    |grp_kmeans_Pipeline_VITIS_LOOP_8_1_fu_175  |kmeans_Pipeline_VITIS_LOOP_8_1  |        0|  36|  121|  1216|    0|
+    +-------------------------------------------+--------------------------------+---------+----+-----+------+-----+
+    |Total                                      |                                |        0|  36|  121|  1216|    0|
+    +-------------------------------------------+--------------------------------+---------+----+-----+------+-----+
+
+    * DSP: 
+    N/A
+
+    * Memory: 
+    N/A
+
+    * FIFO: 
+    N/A
+
+    * Expression: 
+    N/A
+
+    * Multiplexer: 
+    +----------------------------+----+-----------+-----+-----------+
+    |            Name            | LUT| Input Size| Bits| Total Bits|
+    +----------------------------+----+-----------+-----+-----------+
+    |ap_NS_fsm                   |  26|          5|    1|          5|
+    |centroids_0_address0_local  |  14|          3|    2|          6|
+    |centroids_0_address1_local  |  14|          3|    2|          6|
+    |centroids_1_address0_local  |  14|          3|    2|          6|
+    |centroids_1_address1_local  |  14|          3|    2|          6|
+    |centroids_2_address0_local  |  14|          3|    2|          6|
+    |centroids_2_address1_local  |  14|          3|    2|          6|
+    +----------------------------+----+-----------+-----+-----------+
+    |Total                       | 110|         23|   13|         41|
+    +----------------------------+----+-----------+-----+-----------+
+
+    * Register: 
+    +--------------------------------------------------------+----+----+-----+-----------+
+    |                          Name                          | FF | LUT| Bits| Const Bits|
+    +--------------------------------------------------------+----+----+-----+-----------+
+    |ap_CS_fsm                                               |   4|   0|    4|          0|
+    |centroids_0_load_1_reg_250                              |  32|   0|   32|          0|
+    |centroids_0_load_2_reg_295                              |  32|   0|   32|          0|
+    |centroids_0_load_3_reg_310                              |  32|   0|   32|          0|
+    |centroids_0_load_reg_235                                |  32|   0|   32|          0|
+    |centroids_1_load_1_reg_255                              |  32|   0|   32|          0|
+    |centroids_1_load_2_reg_300                              |  32|   0|   32|          0|
+    |centroids_1_load_3_reg_315                              |  32|   0|   32|          0|
+    |centroids_1_load_reg_240                                |  32|   0|   32|          0|
+    |centroids_2_load_1_reg_260                              |  32|   0|   32|          0|
+    |centroids_2_load_2_reg_305                              |  32|   0|   32|          0|
+    |centroids_2_load_3_reg_320                              |  32|   0|   32|          0|
+    |centroids_2_load_reg_245                                |  32|   0|   32|          0|
+    |grp_kmeans_Pipeline_VITIS_LOOP_8_1_fu_175_ap_start_reg  |   1|   0|    1|          0|
+    +--------------------------------------------------------+----+----+-----+-----------+
+    |Total                                                   | 389|   0|  389|          0|
+    +--------------------------------------------------------+----+----+-----+-----------+
+
+
+
+================================================================
+== Interface
+================================================================
+* Summary: 
++----------------------+-----+-----+------------+--------------+--------------+
+|       RTL Ports      | Dir | Bits|  Protocol  | Source Object|    C Type    |
++----------------------+-----+-----+------------+--------------+--------------+
+|ap_clk                |   in|    1|  ap_ctrl_hs|        kmeans|  return value|
+|ap_rst                |   in|    1|  ap_ctrl_hs|        kmeans|  return value|
+|ap_start              |   in|    1|  ap_ctrl_hs|        kmeans|  return value|
+|ap_done               |  out|    1|  ap_ctrl_hs|        kmeans|  return value|
+|ap_idle               |  out|    1|  ap_ctrl_hs|        kmeans|  return value|
+|ap_ready              |  out|    1|  ap_ctrl_hs|        kmeans|  return value|
+|points_0_address0     |  out|    6|   ap_memory|      points_0|         array|
+|points_0_ce0          |  out|    1|   ap_memory|      points_0|         array|
+|points_0_q0           |   in|   32|   ap_memory|      points_0|         array|
+|points_1_address0     |  out|    6|   ap_memory|      points_1|         array|
+|points_1_ce0          |  out|    1|   ap_memory|      points_1|         array|
+|points_1_q0           |   in|   32|   ap_memory|      points_1|         array|
+|points_2_address0     |  out|    6|   ap_memory|      points_2|         array|
+|points_2_ce0          |  out|    1|   ap_memory|      points_2|         array|
+|points_2_q0           |   in|   32|   ap_memory|      points_2|         array|
+|centroids_0_address0  |  out|    2|   ap_memory|   centroids_0|         array|
+|centroids_0_ce0       |  out|    1|   ap_memory|   centroids_0|         array|
+|centroids_0_q0        |   in|   32|   ap_memory|   centroids_0|         array|
+|centroids_0_address1  |  out|    2|   ap_memory|   centroids_0|         array|
+|centroids_0_ce1       |  out|    1|   ap_memory|   centroids_0|         array|
+|centroids_0_q1        |   in|   32|   ap_memory|   centroids_0|         array|
+|centroids_1_address0  |  out|    2|   ap_memory|   centroids_1|         array|
+|centroids_1_ce0       |  out|    1|   ap_memory|   centroids_1|         array|
+|centroids_1_q0        |   in|   32|   ap_memory|   centroids_1|         array|
+|centroids_1_address1  |  out|    2|   ap_memory|   centroids_1|         array|
+|centroids_1_ce1       |  out|    1|   ap_memory|   centroids_1|         array|
+|centroids_1_q1        |   in|   32|   ap_memory|   centroids_1|         array|
+|centroids_2_address0  |  out|    2|   ap_memory|   centroids_2|         array|
+|centroids_2_ce0       |  out|    1|   ap_memory|   centroids_2|         array|
+|centroids_2_q0        |   in|   32|   ap_memory|   centroids_2|         array|
+|centroids_2_address1  |  out|    2|   ap_memory|   centroids_2|         array|
+|centroids_2_ce1       |  out|    1|   ap_memory|   centroids_2|         array|
+|centroids_2_q1        |   in|   32|   ap_memory|   centroids_2|         array|
+|labels_address0       |  out|    6|   ap_memory|        labels|         array|
+|labels_ce0            |  out|    1|   ap_memory|        labels|         array|
+|labels_we0            |  out|    1|   ap_memory|        labels|         array|
+|labels_d0             |  out|   32|   ap_memory|        labels|         array|
++----------------------+-----+-----+------------+--------------+--------------+
+

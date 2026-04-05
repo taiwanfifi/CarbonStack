@@ -1,0 +1,445 @@
+{
+  "timestamp": 1775313588,
+  "methods": [
+    "A3",
+    "A5"
+  ],
+  "results": [
+    {
+      "algo": "fir_filter",
+      "method": "A3",
+      "success": true,
+      "type_match": 0.667,
+      "pfs": 0.686,
+      "llm_pragma_count": 7,
+      "pareto_pragma_count": 7,
+      "llm_pragmas": [
+        "#pragma HLS ARRAY_PARTITION variable=coeffs type=cyclic dim=1 factor=8",
+        "#pragma HLS ARRAY_PARTITION variable=output type=cyclic dim=1 factor=16",
+        "#pragma HLS ARRAY_PARTITION variable=input type=cyclic dim=1 factor=1",
+        "#pragma HLS PIPELINE OFF",
+        "#pragma HLS UNROLL factor=1"
+      ],
+      "pareto_pragmas": [
+        "#pragma HLS ARRAY_PARTITION variable=output type=cyclic dim=1 factor=16",
+        "#pragma HLS ARRAY_PARTITION variable=coeffs type=cyclic dim=1 factor=8",
+        "#pragma HLS ARRAY_PARTITION variable=input type=cyclic dim=1 factor=16",
+        "#pragma HLS PIPELINE",
+        "#pragma HLS UNROLL factor=16"
+      ]
+    },
+    {
+      "algo": "AES_Encrypt",
+      "method": "A3",
+      "success": true,
+      "type_match": 1.0,
+      "pfs": 0.544,
+      "llm_pragma_count": 22,
+      "pareto_pragma_count": 25,
+      "llm_pragmas": [
+        "#pragma HLS PIPELINE II=1",
+        "#pragma HLS UNROLL factor=4",
+        "#pragma HLS ARRAY_PARTITION variable=temp type=cyclic dim=1 factor=4",
+        "#pragma HLS PIPELINE II=1",
+        "#pragma HLS UNROLL factor=2"
+      ],
+      "pareto_pragmas": [
+        "#pragma HLS PIPELINE OFF",
+        "#pragma HLS UNROLL factor=8",
+        "#pragma HLS PIPELINE OFF",
+        "#pragma HLS UNROLL factor=16",
+        "#pragma HLS PIPELINE"
+      ]
+    },
+    {
+      "algo": "des_encrypt",
+      "method": "A3",
+      "success": true,
+      "type_match": 1.0,
+      "pfs": 0.825,
+      "llm_pragma_count": 8,
+      "pareto_pragma_count": 8,
+      "llm_pragmas": [
+        "#pragma HLS ARRAY_PARTITION variable=output type=cyclic dim=1 factor=16",
+        "#pragma HLS ARRAY_PARTITION variable=input type=cyclic dim=1 factor=2",
+        "#pragma HLS PIPELINE II=1",
+        "#pragma HLS PIPELINE II=1",
+        "#pragma HLS UNROLL factor=8"
+      ],
+      "pareto_pragmas": [
+        "#pragma HLS ARRAY_PARTITION variable=output type=cyclic dim=1 factor=8",
+        "#pragma HLS ARRAY_PARTITION variable=input type=cyclic dim=1 factor=4",
+        "#pragma HLS PIPELINE OFF",
+        "#pragma HLS UNROLL factor=4",
+        "#pragma HLS PIPELINE"
+      ]
+    },
+    {
+      "algo": "adpcm",
+      "method": "A3",
+      "success": true,
+      "type_match": 1.0,
+      "pfs": 0.875,
+      "llm_pragma_count": 32,
+      "pareto_pragma_count": 32,
+      "llm_pragmas": [
+        "#pragma HLS PIPELINE OFF",
+        "#pragma HLS UNROLL factor=1",
+        "#pragma HLS PIPELINE",
+        "#pragma HLS UNROLL factor=4",
+        "#pragma HLS PIPELINE OFF"
+      ],
+      "pareto_pragmas": [
+        "#pragma HLS PIPELINE OFF",
+        "#pragma HLS UNROLL factor=2",
+        "#pragma HLS PIPELINE",
+        "#pragma HLS UNROLL factor=1",
+        "#pragma HLS PIPELINE OFF"
+      ]
+    },
+    {
+      "algo": "gemm_ncubed",
+      "method": "A3",
+      "success": true,
+      "type_match": 1.0,
+      "pfs": 1.0,
+      "llm_pragma_count": 0,
+      "pareto_pragma_count": 0,
+      "llm_pragmas": [],
+      "pareto_pragmas": []
+    },
+    {
+      "algo": "stencil_stencil2d",
+      "method": "A3",
+      "success": true,
+      "type_match": 1.0,
+      "pfs": 0.873,
+      "llm_pragma_count": 11,
+      "pareto_pragma_count": 11,
+      "llm_pragmas": [
+        "#pragma HLS ARRAY_PARTITION variable=filter type=cyclic dim=1 factor=4",
+        "#pragma HLS ARRAY_PARTITION variable=sol type=cyclic dim=1 factor=8",
+        "#pragma HLS ARRAY_PARTITION variable=orig type=cyclic dim=1 factor=4",
+        "#pragma HLS PIPELINE II=1",
+        "#pragma HLS PIPELINE II=1"
+      ],
+      "pareto_pragmas": [
+        "#pragma HLS ARRAY_PARTITION variable=filter type=cyclic dim=1 factor=8",
+        "#pragma HLS ARRAY_PARTITION variable=sol type=cyclic dim=1 factor=8",
+        "#pragma HLS ARRAY_PARTITION variable=orig type=cyclic dim=1 factor=8",
+        "#pragma HLS PIPELINE",
+        "#pragma HLS UNROLL factor=8"
+      ]
+    },
+    {
+      "algo": "dct",
+      "method": "A3",
+      "success": true,
+      "type_match": 1.0,
+      "pfs": 0.767,
+      "llm_pragma_count": 6,
+      "pareto_pragma_count": 6,
+      "llm_pragmas": [
+        "#pragma HLS ARRAY_PARTITION variable=output type=cyclic dim=1 factor=8",
+        "#pragma HLS ARRAY_PARTITION variable=input type=cyclic dim=1 factor=1",
+        "#pragma HLS PIPELINE II=1",
+        "#pragma HLS UNROLL factor=8",
+        "#pragma HLS PIPELINE OFF"
+      ],
+      "pareto_pragmas": [
+        "#pragma HLS ARRAY_PARTITION variable=output type=cyclic dim=1 factor=1",
+        "#pragma HLS ARRAY_PARTITION variable=input type=cyclic dim=1 factor=16",
+        "#pragma HLS PIPELINE",
+        "#pragma HLS UNROLL factor=1",
+        "#pragma HLS PIPELINE OFF"
+      ]
+    },
+    {
+      "algo": "black_scholes",
+      "method": "A3",
+      "success": true,
+      "type_match": 0.667,
+      "pfs": 0.857,
+      "llm_pragma_count": 7,
+      "pareto_pragma_count": 7,
+      "llm_pragmas": [
+        "#pragma HLS ARRAY_PARTITION variable=put type=cyclic dim=1 factor=8",
+        "#pragma HLS ARRAY_PARTITION variable=call type=cyclic dim=1 factor=16",
+        "#pragma HLS ARRAY_PARTITION variable=T type=cyclic dim=1 factor=16",
+        "#pragma HLS ARRAY_PARTITION variable=X type=cyclic dim=1 factor=2",
+        "#pragma HLS ARRAY_PARTITION variable=S type=cyclic dim=1 factor=16"
+      ],
+      "pareto_pragmas": [
+        "#pragma HLS ARRAY_PARTITION variable=put type=cyclic dim=1 factor=16",
+        "#pragma HLS ARRAY_PARTITION variable=call type=cyclic dim=1 factor=16",
+        "#pragma HLS ARRAY_PARTITION variable=T type=cyclic dim=1 factor=8",
+        "#pragma HLS ARRAY_PARTITION variable=X type=cyclic dim=1 factor=8",
+        "#pragma HLS ARRAY_PARTITION variable=S type=cyclic dim=1 factor=16"
+      ]
+    },
+    {
+      "algo": "median_filter",
+      "method": "A3",
+      "success": true,
+      "type_match": 0.667,
+      "pfs": 0.6,
+      "llm_pragma_count": 8,
+      "pareto_pragma_count": 8,
+      "llm_pragmas": [
+        "#pragma HLS ARRAY_PARTITION variable=output type=cyclic dim=1 factor=8",
+        "#pragma HLS ARRAY_PARTITION variable=input type=cyclic dim=1 factor=1",
+        "#pragma HLS PIPELINE II=1",
+        "#pragma HLS PIPELINE II=1",
+        "#pragma HLS PIPELINE II=1"
+      ],
+      "pareto_pragmas": [
+        "#pragma HLS ARRAY_PARTITION variable=output type=cyclic dim=1 factor=16",
+        "#pragma HLS ARRAY_PARTITION variable=input type=cyclic dim=1 factor=16",
+        "#pragma HLS PIPELINE",
+        "#pragma HLS UNROLL factor=16",
+        "#pragma HLS PIPELINE OFF"
+      ]
+    },
+    {
+      "algo": "fft_strided",
+      "method": "A3",
+      "success": true,
+      "type_match": 0.667,
+      "pfs": 0.78,
+      "llm_pragma_count": 10,
+      "pareto_pragma_count": 10,
+      "llm_pragmas": [
+        "#pragma HLS ARRAY_PARTITION variable=img_twid type=cyclic dim=1 factor=1",
+        "#pragma HLS ARRAY_PARTITION variable=real_twid type=cyclic dim=1 factor=1",
+        "#pragma HLS ARRAY_PARTITION variable=img type=cyclic dim=1 factor=8",
+        "#pragma HLS ARRAY_PARTITION variable=real type=cyclic dim=1 factor=8",
+        "#pragma HLS PIPELINE II=1"
+      ],
+      "pareto_pragmas": [
+        "#pragma HLS ARRAY_PARTITION variable=img_twid type=cyclic dim=1 factor=1",
+        "#pragma HLS ARRAY_PARTITION variable=real_twid type=cyclic dim=1 factor=1",
+        "#pragma HLS ARRAY_PARTITION variable=img type=cyclic dim=1 factor=1",
+        "#pragma HLS ARRAY_PARTITION variable=real type=cyclic dim=1 factor=1",
+        "#pragma HLS PIPELINE OFF"
+      ]
+    },
+    {
+      "algo": "fir_filter",
+      "method": "A5",
+      "success": true,
+      "type_match": 0.667,
+      "pfs": 0.829,
+      "llm_pragma_count": 7,
+      "pareto_pragma_count": 7,
+      "llm_pragmas": [
+        "#pragma HLS ARRAY_PARTITION variable=coeffs type=cyclic dim=1 factor=8",
+        "#pragma HLS ARRAY_PARTITION variable=output type=cyclic dim=1 factor=16",
+        "#pragma HLS ARRAY_PARTITION variable=input type=cyclic dim=1 factor=1",
+        "#pragma HLS PIPELINE II=1",
+        "#pragma HLS UNROLL factor=8"
+      ],
+      "pareto_pragmas": [
+        "#pragma HLS ARRAY_PARTITION variable=output type=cyclic dim=1 factor=16",
+        "#pragma HLS ARRAY_PARTITION variable=coeffs type=cyclic dim=1 factor=8",
+        "#pragma HLS ARRAY_PARTITION variable=input type=cyclic dim=1 factor=16",
+        "#pragma HLS PIPELINE",
+        "#pragma HLS UNROLL factor=16"
+      ]
+    },
+    {
+      "algo": "AES_Encrypt",
+      "method": "A5",
+      "success": true,
+      "type_match": 1.0,
+      "pfs": 0.904,
+      "llm_pragma_count": 22,
+      "pareto_pragma_count": 25,
+      "llm_pragmas": [
+        "#pragma HLS ARRAY_PARTITION variable=sbox type=cyclic dim=1 factor=16",
+        "#pragma HLS PIPELINE II=1",
+        "#pragma HLS UNROLL factor=8",
+        "#pragma HLS ARRAY_PARTITION variable=temp type=cyclic dim=1 factor=4",
+        "#pragma HLS PIPELINE II=1"
+      ],
+      "pareto_pragmas": [
+        "#pragma HLS PIPELINE OFF",
+        "#pragma HLS UNROLL factor=8",
+        "#pragma HLS PIPELINE OFF",
+        "#pragma HLS UNROLL factor=16",
+        "#pragma HLS PIPELINE"
+      ]
+    },
+    {
+      "algo": "des_encrypt",
+      "method": "A5",
+      "success": true,
+      "type_match": 1.0,
+      "pfs": 0.55,
+      "llm_pragma_count": 8,
+      "pareto_pragma_count": 8,
+      "llm_pragmas": [
+        "#pragma HLS ARRAY_PARTITION variable=output type=cyclic dim=1 factor=16",
+        "#pragma HLS ARRAY_PARTITION variable=input type=cyclic dim=1 factor=2",
+        "#pragma HLS PIPELINE II=1",
+        "#pragma HLS UNROLL factor=1",
+        "#pragma HLS PIPELINE II=1"
+      ],
+      "pareto_pragmas": [
+        "#pragma HLS ARRAY_PARTITION variable=output type=cyclic dim=1 factor=8",
+        "#pragma HLS ARRAY_PARTITION variable=input type=cyclic dim=1 factor=4",
+        "#pragma HLS PIPELINE OFF",
+        "#pragma HLS UNROLL factor=4",
+        "#pragma HLS PIPELINE"
+      ]
+    },
+    {
+      "algo": "adpcm",
+      "method": "A5",
+      "success": true,
+      "type_match": 1.0,
+      "pfs": 0.875,
+      "llm_pragma_count": 32,
+      "pareto_pragma_count": 32,
+      "llm_pragmas": [
+        "#pragma HLS PIPELINE OFF",
+        "#pragma HLS UNROLL factor=1",
+        "#pragma HLS PIPELINE",
+        "#pragma HLS UNROLL factor=4",
+        "#pragma HLS PIPELINE OFF"
+      ],
+      "pareto_pragmas": [
+        "#pragma HLS PIPELINE OFF",
+        "#pragma HLS UNROLL factor=2",
+        "#pragma HLS PIPELINE",
+        "#pragma HLS UNROLL factor=1",
+        "#pragma HLS PIPELINE OFF"
+      ]
+    },
+    {
+      "algo": "gemm_ncubed",
+      "method": "A5",
+      "success": true,
+      "type_match": 1.0,
+      "pfs": 1.0,
+      "llm_pragma_count": 0,
+      "pareto_pragma_count": 0,
+      "llm_pragmas": [],
+      "pareto_pragmas": []
+    },
+    {
+      "algo": "stencil_stencil2d",
+      "method": "A5",
+      "success": true,
+      "type_match": 1.0,
+      "pfs": 0.909,
+      "llm_pragma_count": 11,
+      "pareto_pragma_count": 11,
+      "llm_pragmas": [
+        "#pragma HLS ARRAY_PARTITION variable=filter type=cyclic dim=1 factor=4",
+        "#pragma HLS ARRAY_PARTITION variable=sol type=cyclic dim=1 factor=8",
+        "#pragma HLS ARRAY_PARTITION variable=orig type=cyclic dim=1 factor=4",
+        "#pragma HLS PIPELINE II=1",
+        "#pragma HLS PIPELINE II=1"
+      ],
+      "pareto_pragmas": [
+        "#pragma HLS ARRAY_PARTITION variable=filter type=cyclic dim=1 factor=8",
+        "#pragma HLS ARRAY_PARTITION variable=sol type=cyclic dim=1 factor=8",
+        "#pragma HLS ARRAY_PARTITION variable=orig type=cyclic dim=1 factor=8",
+        "#pragma HLS PIPELINE",
+        "#pragma HLS UNROLL factor=8"
+      ]
+    },
+    {
+      "algo": "dct",
+      "method": "A5",
+      "success": true,
+      "type_match": 1.0,
+      "pfs": 0.767,
+      "llm_pragma_count": 6,
+      "pareto_pragma_count": 6,
+      "llm_pragmas": [
+        "#pragma HLS ARRAY_PARTITION variable=output type=cyclic dim=1 factor=8",
+        "#pragma HLS ARRAY_PARTITION variable=input type=cyclic dim=1 factor=1",
+        "#pragma HLS PIPELINE II=1",
+        "#pragma HLS UNROLL factor=8",
+        "#pragma HLS PIPELINE OFF"
+      ],
+      "pareto_pragmas": [
+        "#pragma HLS ARRAY_PARTITION variable=output type=cyclic dim=1 factor=1",
+        "#pragma HLS ARRAY_PARTITION variable=input type=cyclic dim=1 factor=16",
+        "#pragma HLS PIPELINE",
+        "#pragma HLS UNROLL factor=1",
+        "#pragma HLS PIPELINE OFF"
+      ]
+    },
+    {
+      "algo": "black_scholes",
+      "method": "A5",
+      "success": true,
+      "type_match": 0.667,
+      "pfs": 0.857,
+      "llm_pragma_count": 7,
+      "pareto_pragma_count": 7,
+      "llm_pragmas": [
+        "#pragma HLS ARRAY_PARTITION variable=put type=cyclic dim=1 factor=8",
+        "#pragma HLS ARRAY_PARTITION variable=call type=cyclic dim=1 factor=16",
+        "#pragma HLS ARRAY_PARTITION variable=T type=cyclic dim=1 factor=16",
+        "#pragma HLS ARRAY_PARTITION variable=X type=cyclic dim=1 factor=2",
+        "#pragma HLS ARRAY_PARTITION variable=S type=cyclic dim=1 factor=16"
+      ],
+      "pareto_pragmas": [
+        "#pragma HLS ARRAY_PARTITION variable=put type=cyclic dim=1 factor=16",
+        "#pragma HLS ARRAY_PARTITION variable=call type=cyclic dim=1 factor=16",
+        "#pragma HLS ARRAY_PARTITION variable=T type=cyclic dim=1 factor=8",
+        "#pragma HLS ARRAY_PARTITION variable=X type=cyclic dim=1 factor=8",
+        "#pragma HLS ARRAY_PARTITION variable=S type=cyclic dim=1 factor=16"
+      ]
+    },
+    {
+      "algo": "median_filter",
+      "method": "A5",
+      "success": true,
+      "type_match": 1.0,
+      "pfs": 0.725,
+      "llm_pragma_count": 8,
+      "pareto_pragma_count": 8,
+      "llm_pragmas": [
+        "#pragma HLS ARRAY_PARTITION variable=output type=cyclic dim=1 factor=8",
+        "#pragma HLS ARRAY_PARTITION variable=input type=cyclic dim=1 factor=1",
+        "#pragma HLS PIPELINE II=1",
+        "#pragma HLS UNROLL factor=8",
+        "#pragma HLS UNROLL factor=8"
+      ],
+      "pareto_pragmas": [
+        "#pragma HLS ARRAY_PARTITION variable=output type=cyclic dim=1 factor=16",
+        "#pragma HLS ARRAY_PARTITION variable=input type=cyclic dim=1 factor=16",
+        "#pragma HLS PIPELINE",
+        "#pragma HLS UNROLL factor=16",
+        "#pragma HLS PIPELINE OFF"
+      ]
+    },
+    {
+      "algo": "fft_strided",
+      "method": "A5",
+      "success": true,
+      "type_match": 0.667,
+      "pfs": 0.78,
+      "llm_pragma_count": 10,
+      "pareto_pragma_count": 10,
+      "llm_pragmas": [
+        "#pragma HLS ARRAY_PARTITION variable=img_twid type=cyclic dim=1 factor=1",
+        "#pragma HLS ARRAY_PARTITION variable=real_twid type=cyclic dim=1 factor=1",
+        "#pragma HLS ARRAY_PARTITION variable=img type=cyclic dim=1 factor=8",
+        "#pragma HLS ARRAY_PARTITION variable=real type=cyclic dim=1 factor=8",
+        "#pragma HLS PIPELINE II=1"
+      ],
+      "pareto_pragmas": [
+        "#pragma HLS ARRAY_PARTITION variable=img_twid type=cyclic dim=1 factor=1",
+        "#pragma HLS ARRAY_PARTITION variable=real_twid type=cyclic dim=1 factor=1",
+        "#pragma HLS ARRAY_PARTITION variable=img type=cyclic dim=1 factor=1",
+        "#pragma HLS ARRAY_PARTITION variable=real type=cyclic dim=1 factor=1",
+        "#pragma HLS PIPELINE OFF"
+      ]
+    }
+  ]
+}

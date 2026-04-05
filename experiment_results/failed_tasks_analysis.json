@@ -1,0 +1,230 @@
+[
+  {
+    "pid": "p00431",
+    "idx": 0,
+    "diagnosis": "code_generated_but_tc_fail",
+    "features": [
+      "recursion",
+      "graph",
+      "multi_io"
+    ],
+    "success_now": false,
+    "llm_calls": 5,
+    "src_lines": 60
+  },
+  {
+    "pid": "p03161",
+    "idx": 1,
+    "diagnosis": "code_generated_but_tc_fail",
+    "features": [
+      "DP"
+    ],
+    "success_now": false,
+    "llm_calls": 6,
+    "src_lines": 33
+  },
+  {
+    "pid": "p00431",
+    "idx": 2,
+    "diagnosis": "code_generated_but_tc_fail",
+    "features": [
+      "recursion",
+      "graph",
+      "multi_io"
+    ],
+    "success_now": false,
+    "llm_calls": 5,
+    "src_lines": 56
+  },
+  {
+    "pid": "p02792",
+    "idx": 3,
+    "diagnosis": "code_generated_but_tc_fail",
+    "features": [],
+    "success_now": false,
+    "llm_calls": 5,
+    "src_lines": 72
+  },
+  {
+    "pid": "p03313",
+    "idx": 4,
+    "diagnosis": "code_generated_but_tc_fail",
+    "features": [],
+    "success_now": false,
+    "llm_calls": 5,
+    "src_lines": 52
+  },
+  {
+    "pid": "p02946",
+    "idx": 5,
+    "diagnosis": "code_generated_but_tc_fail",
+    "features": [],
+    "success_now": false,
+    "llm_calls": 5,
+    "src_lines": 14
+  },
+  {
+    "pid": "p03161",
+    "idx": 6,
+    "diagnosis": "code_generated_but_tc_fail",
+    "features": [
+      "DP",
+      "macros(8)"
+    ],
+    "success_now": false,
+    "llm_calls": 5,
+    "src_lines": 42
+  },
+  {
+    "pid": "p03161",
+    "idx": 7,
+    "diagnosis": "ACTUALLY_PASSED",
+    "features": [],
+    "success_now": true,
+    "llm_calls": 4,
+    "src_lines": 30
+  },
+  {
+    "pid": "p02676",
+    "idx": 8,
+    "diagnosis": "ACTUALLY_PASSED",
+    "features": [
+      "recursion",
+      "multi_io",
+      "macros(14)"
+    ],
+    "success_now": true,
+    "llm_calls": 5,
+    "src_lines": 56
+  },
+  {
+    "pid": "p03796",
+    "idx": 9,
+    "diagnosis": "ACTUALLY_PASSED",
+    "features": [],
+    "success_now": true,
+    "llm_calls": 6,
+    "src_lines": 17
+  },
+  {
+    "pid": "p02714",
+    "idx": 10,
+    "diagnosis": "ACTUALLY_PASSED",
+    "features": [
+      "macros(4)"
+    ],
+    "success_now": true,
+    "llm_calls": 4,
+    "src_lines": 29
+  },
+  {
+    "pid": "p03161",
+    "idx": 11,
+    "diagnosis": "ACTUALLY_PASSED",
+    "features": [
+      "recursion",
+      "DP",
+      "multi_io",
+      "macros(8)"
+    ],
+    "success_now": true,
+    "llm_calls": 4,
+    "src_lines": 72
+  },
+  {
+    "pid": "p02946",
+    "idx": 12,
+    "diagnosis": "code_generated_but_tc_fail",
+    "features": [],
+    "success_now": false,
+    "llm_calls": 4,
+    "src_lines": 22
+  },
+  {
+    "pid": "p03161",
+    "idx": 13,
+    "diagnosis": "code_generated_but_tc_fail",
+    "features": [
+      "DP",
+      "macros(7)"
+    ],
+    "success_now": false,
+    "llm_calls": 5,
+    "src_lines": 42
+  },
+  {
+    "pid": "p03161",
+    "idx": 14,
+    "diagnosis": "ACTUALLY_PASSED",
+    "features": [
+      "DP",
+      "macros(11)"
+    ],
+    "success_now": true,
+    "llm_calls": 4,
+    "src_lines": 47
+  },
+  {
+    "pid": "p02676",
+    "idx": 15,
+    "diagnosis": "ACTUALLY_PASSED",
+    "features": [],
+    "success_now": true,
+    "llm_calls": 5,
+    "src_lines": 15
+  },
+  {
+    "pid": "p02898",
+    "idx": 16,
+    "diagnosis": "code_generated_but_tc_fail",
+    "features": [
+      "macros(26)"
+    ],
+    "success_now": false,
+    "llm_calls": 5,
+    "src_lines": 44
+  },
+  {
+    "pid": "p03161",
+    "idx": 17,
+    "diagnosis": "ACTUALLY_PASSED",
+    "features": [
+      "DP"
+    ],
+    "success_now": true,
+    "llm_calls": 4,
+    "src_lines": 19
+  },
+  {
+    "pid": "p03796",
+    "idx": 18,
+    "diagnosis": "ACTUALLY_PASSED",
+    "features": [],
+    "success_now": true,
+    "llm_calls": 4,
+    "src_lines": 20
+  },
+  {
+    "pid": "p03161",
+    "idx": 19,
+    "diagnosis": "ACTUALLY_PASSED",
+    "features": [
+      "DP",
+      "macros(17)"
+    ],
+    "success_now": true,
+    "llm_calls": 4,
+    "src_lines": 50
+  },
+  {
+    "pid": "p03313",
+    "idx": 20,
+    "diagnosis": "code_generated_but_tc_fail",
+    "features": [
+      "macros(10)"
+    ],
+    "success_now": false,
+    "llm_calls": 5,
+    "src_lines": 47
+  }
+]

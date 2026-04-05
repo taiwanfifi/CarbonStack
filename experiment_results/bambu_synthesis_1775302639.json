@@ -1,0 +1,125 @@
+{
+  "timestamp": 1775302639,
+  "results": [
+    {
+      "algo": "fir_filter",
+      "num_designs": 1119,
+      "forgehls_worst_lat": 330753,
+      "forgehls_best_lat": 422,
+      "forgehls_worst_lut": 235,
+      "forgehls_best_lut": 77379,
+      "bambu_results": {
+        "worst_default": {
+          "cycles": 15,
+          "area": 489.0,
+          "dsp": 2,
+          "ff": 482,
+          "max_freq_mhz": 104.6945014119012,
+          "states": 13
+        },
+        "worst_O1": {
+          "cycles": 11,
+          "area": 284.0,
+          "dsp": 1,
+          "ff": 258,
+          "max_freq_mhz": 104.69450141190143,
+          "states": 9
+        },
+        "best_default": {
+          "error": "Error in compilation"
+        },
+        "best_O1": {
+          "error": "Error in compilation"
+        }
+      }
+    },
+    {
+      "algo": "dct",
+      "num_designs": 259,
+      "forgehls_worst_lat": 63971329,
+      "forgehls_best_lat": 4156,
+      "forgehls_worst_lut": 9642,
+      "forgehls_best_lut": 7499841,
+      "bambu_results": {
+        "worst_default": {
+          "error": "Error in compilation"
+        },
+        "worst_O1": {
+          "error": "Error in compilation"
+        },
+        "best_default": {
+          "error": "Error in compilation"
+        },
+        "best_O1": {
+          "error": "Error in compilation"
+        }
+      }
+    },
+    {
+      "algo": "median_filter",
+      "num_designs": 292,
+      "forgehls_worst_lat": 19420,
+      "forgehls_best_lat": 69,
+      "forgehls_worst_lut": 689,
+      "forgehls_best_lut": 4225,
+      "bambu_results": {
+        "worst_default": {
+          "error": "Error in compilation"
+        },
+        "worst_O1": {
+          "error": "Error in compilation"
+        },
+        "best_default": {
+          "error": "Error in compilation"
+        },
+        "best_O1": {
+          "error": "Error in compilation"
+        }
+      }
+    },
+    {
+      "algo": "gemm_ncubed",
+      "num_designs": 814,
+      "forgehls_worst_lat": 2109569,
+      "forgehls_best_lat": 967,
+      "forgehls_worst_lut": 1086,
+      "forgehls_best_lut": 655229,
+      "bambu_results": {
+        "worst_default": {
+          "error": "Error in compilation"
+        },
+        "worst_O1": {
+          "error": "Error in compilation"
+        },
+        "best_default": {
+          "error": "Error in compilation"
+        },
+        "best_O1": {
+          "error": "Error in compilation"
+        }
+      }
+    },
+    {
+      "algo": "black_scholes",
+      "num_designs": 894,
+      "forgehls_worst_lat": 238859,
+      "forgehls_best_lat": 225,
+      "forgehls_worst_lut": 15155,
+      "forgehls_best_lut": 1517767,
+      "bambu_results": {
+        "worst_default": {
+          "error": "Error in compilation"
+        },
+        "worst_O1": {
+          "error": "Error in compilation"
+        },
+        "best_default": {
+          "error": "Error in compilation"
+        },
+        "best_O1": {
+          "error": "Error in compilation"
+        }
+      }
+    }
+  ]
+}

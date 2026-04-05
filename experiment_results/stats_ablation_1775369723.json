@@ -1,0 +1,381 @@
+{
+  "multi_seed": {
+    "seed_0": [
+      {
+        "algo": "fir_filter",
+        "tm": 0.667,
+        "pfs": 0.75,
+        "temp": 0.3
+      },
+      {
+        "algo": "gemm",
+        "tm": 0.667,
+        "pfs": 0.533,
+        "temp": 0.3
+      },
+      {
+        "algo": "dct",
+        "tm": 1.0,
+        "pfs": 1.0,
+        "temp": 0.3
+      },
+      {
+        "algo": "stencil2d",
+        "tm": 0.667,
+        "pfs": 0.667,
+        "temp": 0.3
+      },
+      {
+        "algo": "black_scholes",
+        "tm": 1.0,
+        "pfs": 0.867,
+        "temp": 0.3
+      }
+    ],
+    "seed_1": [
+      {
+        "algo": "fir_filter",
+        "tm": 0.667,
+        "pfs": 1.0,
+        "temp": 0.4
+      },
+      {
+        "algo": "gemm",
+        "tm": 1.0,
+        "pfs": 0.8,
+        "temp": 0.4
+      },
+      {
+        "algo": "dct",
+        "tm": 1.0,
+        "pfs": 1.0,
+        "temp": 0.4
+      },
+      {
+        "algo": "stencil2d",
+        "tm": 1.0,
+        "pfs": 1.0,
+        "temp": 0.4
+      },
+      {
+        "algo": "black_scholes",
+        "tm": 1.0,
+        "pfs": 0.8,
+        "temp": 0.4
+      }
+    ],
+    "seed_2": [
+      {
+        "algo": "fir_filter",
+        "tm": 0.667,
+        "pfs": 0.75,
+        "temp": 0.5
+      },
+      {
+        "algo": "gemm",
+        "tm": 0,
+        "pfs": 0,
+        "temp": 0.5,
+        "failed": true
+      },
+      {
+        "algo": "dct",
+        "tm": 1.0,
+        "pfs": 0.933,
+        "temp": 0.5
+      },
+      {
+        "algo": "stencil2d",
+        "tm": 0.667,
+        "pfs": 0.733,
+        "temp": 0.5
+      },
+      {
+        "algo": "black_scholes",
+        "tm": 1.0,
+        "pfs": 0.867,
+        "temp": 0.5
+      }
+    ],
+    "seed_3": [
+      {
+        "algo": "fir_filter",
+        "tm": 0.667,
+        "pfs": 1.0,
+        "temp": 0.6000000000000001
+      },
+      {
+        "algo": "gemm",
+        "tm": 0.667,
+        "pfs": 0.533,
+        "temp": 0.6000000000000001
+      },
+      {
+        "algo": "dct",
+        "tm": 1.0,
+        "pfs": 1.0,
+        "temp": 0.6000000000000001
+      },
+      {
+        "algo": "stencil2d",
+        "tm": 1.0,
+        "pfs": 1.0,
+        "temp": 0.6000000000000001
+      },
+      {
+        "algo": "black_scholes",
+        "tm": 1.0,
+        "pfs": 0.867,
+        "temp": 0.6000000000000001
+      }
+    ],
+    "seed_4": [
+      {
+        "algo": "fir_filter",
+        "tm": 0.667,
+        "pfs": 0.75,
+        "temp": 0.7
+      },
+      {
+        "algo": "gemm",
+        "tm": 1.0,
+        "pfs": 0.8,
+        "temp": 0.7
+      },
+      {
+        "algo": "dct",
+        "tm": 1.0,
+        "pfs": 1.0,
+        "temp": 0.7
+      },
+      {
+        "algo": "stencil2d",
+        "tm": 0.667,
+        "pfs": 0.667,
+        "temp": 0.7
+      },
+      {
+        "algo": "black_scholes",
+        "tm": 0.667,
+        "pfs": 0.867,
+        "temp": 0.7
+      }
+    ]
+  },
+  "ablation": {
+    "full": [
+      {
+        "algo": "fir_filter",
+        "tm": 0.667,
+        "pfs": 0.75,
+        "pragmas": [
+          "#pragma HLS ARRAY_PARTITION variable=coeffs type=block dim=1",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL"
+        ]
+      },
+      {
+        "algo": "gemm",
+        "tm": 1.0,
+        "pfs": 0.8,
+        "pragmas": [
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL",
+          "// (e.g., #pragma HLS ARRAY_PARTITION variable=A complete dim=2)"
+        ]
+      },
+      {
+        "algo": "dct",
+        "tm": 1.0,
+        "pfs": 1.0,
+        "pragmas": [
+          "#pragma HLS ARRAY_PARTITION variable=input complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=input complete dim=2",
+          "#pragma HLS ARRAY_PARTITION variable=cos_table complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=cos_table complete dim=2",
+          "#pragma HLS ARRAY_PARTITION variable=output complete dim=1"
+        ]
+      },
+      {
+        "algo": "stencil2d",
+        "tm": 1.0,
+        "pfs": 1.0,
+        "pragmas": [
+          "#pragma HLS ARRAY_PARTITION variable=orig complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=orig complete dim=2",
+          "#pragma HLS ARRAY_PARTITION variable=sol complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=sol complete dim=2",
+          "#pragma HLS PIPELINE II=1"
+        ]
+      },
+      {
+        "algo": "black_scholes",
+        "tm": 0.667,
+        "pfs": 0.533,
+        "pragmas": [
+          "#pragma HLS ARRAY_PARTITION variable=put complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=call complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=T complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=S complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=K complete dim=1"
+        ]
+      }
+    ],
+    "no_partition": [
+      {
+        "algo": "fir_filter",
+        "tm": 0.333,
+        "pfs": 0.75,
+        "pragmas": [
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL"
+        ]
+      },
+      {
+        "algo": "gemm",
+        "tm": 0.333,
+        "pfs": 0.333,
+        "pragmas": [
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS PIPELINE II=1"
+        ]
+      },
+      {
+        "algo": "dct",
+        "tm": 0.667,
+        "pfs": 0.667,
+        "pragmas": [
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL",
+          "#pragma HLS UNROLL"
+        ]
+      },
+      {
+        "algo": "stencil2d",
+        "tm": 0.333,
+        "pfs": 0.4,
+        "pragmas": [
+          "#pragma HLS PIPELINE II=1",
+          "#pragma HLS UNROLL factor=1"
+        ]
+      },
+      {
+        "algo": "black_scholes",
+        "tm": 0.333,
+        "pfs": 0.333,
+        "pragmas": [
+          "#pragma HLS PIPELINE(II=1)"
+        ]
+      }
+    ],
+    "no_pipeline": [
+      {
+        "algo": "fir_filter",
+        "tm": 0.333,
+        "pfs": 0.25,
+        "pragmas": [
+          "#pragma HLS ARRAY_PARTITION variable=coeffs type=cyclic dim=1 factor=1",
+          "#pragma HLS UNROLL",
+          "#pragma HLS UNROLL"
+        ]
+      },
+      {
+        "algo": "gemm",
+        "failed": true
+      },
+      {
+        "algo": "dct",
+        "tm": 0.333,
+        "pfs": 0.4,
+        "pragmas": [
+          "#pragma HLS ARRAY_PARTITION variable=output complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=output complete dim=2",
+          "#pragma HLS ARRAY_PARTITION variable=cos_table complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=cos_table complete dim=2",
+          "#pragma HLS UNROLL factor=1"
+        ]
+      },
+      {
+        "algo": "stencil2d",
+        "tm": 0.667,
+        "pfs": 0.667,
+        "pragmas": [
+          "#pragma HLS ARRAY_PARTITION variable=orig complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=orig complete dim=2",
+          "#pragma HLS ARRAY_PARTITION variable=sol complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=sol complete dim=2",
+          "#pragma HLS UNROLL"
+        ]
+      },
+      {
+        "algo": "black_scholes",
+        "tm": 0.667,
+        "pfs": 0.533,
+        "pragmas": [
+          "#pragma HLS ARRAY_PARTITION variable=put complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=call complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=T complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=S complete dim=1",
+          "#pragma HLS ARRAY_PARTITION variable=K complete dim=1"
+        ]
+      }
+    ]
+  },
+  "model_comparison": {
+    "gemma4:latest": [
+      {
+        "algo": "fir_filter",
+        "tm": 0.667,
+        "pfs": 0.75
+      },
+      {
+        "algo": "gemm",
+        "tm": 1.0,
+        "pfs": 0.8
+      },
+      {
+        "algo": "dct",
+        "tm": 0.667,
+        "pfs": 0.667
+      },
+      {
+        "algo": "stencil2d",
+        "tm": 0.667,
+        "pfs": 0.667
+      },
+      {
+        "algo": "black_scholes",
+        "tm": 1.0,
+        "pfs": 0.867
+      }
+    ],
+    "qwen2.5-coder:7b": [
+      {
+        "algo": "fir_filter",
+        "tm": 0.667,
+        "pfs": 0.1
+      },
+      {
+        "algo": "gemm",
+        "tm": 1.0,
+        "pfs": 0.8
+      },
+      {
+        "algo": "dct",
+        "tm": 1.0,
+        "pfs": 0.867
+      },
+      {
+        "algo": "stencil2d",
+        "tm": 0.667,
+        "pfs": 0.533
+      },
+      {
+        "algo": "black_scholes",
+        "tm": 1.0,
+        "pfs": 0.867
+      }
+    ]
+  }
+}

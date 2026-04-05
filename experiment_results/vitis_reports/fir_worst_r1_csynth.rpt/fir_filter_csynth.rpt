@@ -1,0 +1,191 @@
+
+
+================================================================
+== Vitis HLS Report for 'fir_filter'
+================================================================
+* Date:           Sat Apr  4 15:25:34 2026
+
+* Version:        2025.2 (Build 6295257 on Nov 14 2025)
+* Project:        proj_fir_worst_r1
+* Solution:       sol1 (Vivado IP Flow Target)
+* Product family: virtexuplus
+* Target device:  xcvu9p-flga2104-2-i
+
+
+================================================================
+== Performance Estimates
+================================================================
++ Timing: 
+    * Summary: 
+    +--------+----------+----------+------------+
+    |  Clock |  Target  | Estimated| Uncertainty|
+    +--------+----------+----------+------------+
+    |ap_clk  |  10.00 ns|  5.117 ns|     2.70 ns|
+    +--------+----------+----------+------------+
+
++ Latency: 
+    * Summary: 
+    +---------+---------+-----------+-----------+------+------+---------+
+    |  Latency (cycles) |   Latency (absolute)  |   Interval  | Pipeline|
+    |   min   |   max   |    min    |    max    |  min |  max |   Type  |
+    +---------+---------+-----------+-----------+------+------+---------+
+    |     2593|     2593|  25.930 us|  25.930 us|  2594|  2594|       no|
+    +---------+---------+-----------+-----------+------+------+---------+
+
+    + Detail: 
+        * Instance: 
+        +-------------------------------------------------+--------------------------------------+---------+---------+----------+----------+-----+-----+-------------------+
+        |                                                 |                                      |  Latency (cycles) |  Latency (absolute) |  Interval |      Pipeline     |
+        |                     Instance                    |                Module                |   min   |   max   |    min   |    max   | min | max |        Type       |
+        +-------------------------------------------------+--------------------------------------+---------+---------+----------+----------+-----+-----+-------------------+
+        |grp_fir_filter_Pipeline_VITIS_LOOP_13_2_fu_133   |fir_filter_Pipeline_VITIS_LOOP_13_2   |       18|       18|  0.180 us|  0.180 us|    0|    0|  loop pipeline stp|
+        |grp_fir_filter_Pipeline_VITIS_LOOP_13_21_fu_149  |fir_filter_Pipeline_VITIS_LOOP_13_21  |       18|       18|  0.180 us|  0.180 us|    0|    0|  loop pipeline stp|
+        |grp_fir_filter_Pipeline_VITIS_LOOP_13_22_fu_165  |fir_filter_Pipeline_VITIS_LOOP_13_22  |       18|       18|  0.180 us|  0.180 us|    0|    0|  loop pipeline stp|
+        |grp_fir_filter_Pipeline_VITIS_LOOP_13_23_fu_181  |fir_filter_Pipeline_VITIS_LOOP_13_23  |       18|       18|  0.180 us|  0.180 us|    0|    0|  loop pipeline stp|
+        +-------------------------------------------------+--------------------------------------+---------+---------+----------+----------+-----+-----+-------------------+
+
+        * Loop: 
+        +-------------------+---------+---------+----------+-----------+-----------+------+----------+
+        |                   |  Latency (cycles) | Iteration|  Initiation Interval  | Trip |          |
+        |     Loop Name     |   min   |   max   |  Latency |  achieved |   target  | Count| Pipelined|
+        +-------------------+---------+---------+----------+-----------+-----------+------+----------+
+        |- VITIS_LOOP_10_1  |     2592|     2592|        81|          -|          -|    32|        no|
+        +-------------------+---------+---------+----------+-----------+-----------+------+----------+
+
+
+
+================================================================
+== Utilization Estimates
+================================================================
+* Summary: 
++---------------------+---------+------+---------+---------+-----+
+|         Name        | BRAM_18K|  DSP |    FF   |   LUT   | URAM|
++---------------------+---------+------+---------+---------+-----+
+|DSP                  |        -|     -|        -|        -|    -|
+|Expression           |        -|     -|        0|       15|    -|
+|FIFO                 |        -|     -|        -|        -|    -|
+|Instance             |        -|    12|      172|      792|    -|
+|Memory               |        -|     -|        -|        -|    -|
+|Multiplexer          |        -|     -|        0|      380|    -|
+|Register             |        -|     -|       58|        -|    -|
++---------------------+---------+------+---------+---------+-----+
+|Total                |        0|    12|      230|     1187|    0|
++---------------------+---------+------+---------+---------+-----+
+|Available SLR        |     1440|  2280|   788160|   394080|  320|
++---------------------+---------+------+---------+---------+-----+
+|Utilization SLR (%)  |        0|    ~0|       ~0|       ~0|    0|
++---------------------+---------+------+---------+---------+-----+
+|Available            |     4320|  6840|  2364480|  1182240|  960|
++---------------------+---------+------+---------+---------+-----+
+|Utilization (%)      |        0|    ~0|       ~0|       ~0|    0|
++---------------------+---------+------+---------+---------+-----+
+
++ Detail: 
+    * Instance: 
+    +-------------------------------------------------+--------------------------------------+---------+----+----+-----+-----+
+    |                     Instance                    |                Module                | BRAM_18K| DSP| FF | LUT | URAM|
+    +-------------------------------------------------+--------------------------------------+---------+----+----+-----+-----+
+    |grp_fir_filter_Pipeline_VITIS_LOOP_13_2_fu_133   |fir_filter_Pipeline_VITIS_LOOP_13_2   |        0|   3|  43|  198|    0|
+    |grp_fir_filter_Pipeline_VITIS_LOOP_13_21_fu_149  |fir_filter_Pipeline_VITIS_LOOP_13_21  |        0|   3|  43|  198|    0|
+    |grp_fir_filter_Pipeline_VITIS_LOOP_13_22_fu_165  |fir_filter_Pipeline_VITIS_LOOP_13_22  |        0|   3|  43|  198|    0|
+    |grp_fir_filter_Pipeline_VITIS_LOOP_13_23_fu_181  |fir_filter_Pipeline_VITIS_LOOP_13_23  |        0|   3|  43|  198|    0|
+    +-------------------------------------------------+--------------------------------------+---------+----+----+-----+-----+
+    |Total                                            |                                      |        0|  12| 172|  792|    0|
+    +-------------------------------------------------+--------------------------------------+---------+----+----+-----+-----+
+
+    * DSP: 
+    N/A
+
+    * Memory: 
+    N/A
+
+    * FIFO: 
+    N/A
+
+    * Expression: 
+    +--------------------+----------+----+---+----+------------+------------+
+    |    Variable Name   | Operation| DSP| FF| LUT| Bitwidth P0| Bitwidth P1|
+    +--------------------+----------+----+---+----+------------+------------+
+    |add_ln10_fu_218_p2  |         +|   0|  0|  15|           8|           3|
+    +--------------------+----------+----+---+----+------------+------------+
+    |Total               |          |   0|  0|  15|           8|           3|
+    +--------------------+----------+----+---+----+------------+------------+
+
+    * Multiplexer: 
+    +-------------------------+----+-----------+-----+-----------+
+    |           Name          | LUT| Input Size| Bits| Total Bits|
+    +-------------------------+----+-----------+-----+-----------+
+    |ap_NS_fsm                |  59|         11|    1|         11|
+    |coeffs_0_address0        |  26|          5|    2|         10|
+    |coeffs_0_ce0             |  26|          5|    1|          5|
+    |coeffs_1_address0        |  26|          5|    2|         10|
+    |coeffs_1_ce0             |  26|          5|    1|          5|
+    |coeffs_2_address0        |  26|          5|    2|         10|
+    |coeffs_2_ce0             |  26|          5|    1|          5|
+    |coeffs_3_address0        |  26|          5|    2|         10|
+    |coeffs_3_ce0             |  26|          5|    1|          5|
+    |i_fu_76                  |   9|          2|    8|         16|
+    |input_r_address0         |  26|          5|    7|         35|
+    |input_r_ce0              |  26|          5|    1|          5|
+    |output_r_address0_local  |  26|          5|    7|         35|
+    |output_r_d0_local        |  26|          5|   32|        160|
+    +-------------------------+----+-----------+-----+-----------+
+    |Total                    | 380|         73|   68|        322|
+    +-------------------------+----+-----------+-----+-----------+
+
+    * Register: 
+    +--------------------------------------------------------------+----+----+-----+-----------+
+    |                             Name                             | FF | LUT| Bits| Const Bits|
+    +--------------------------------------------------------------+----+----+-----+-----------+
+    |ap_CS_fsm                                                     |  10|   0|   10|          0|
+    |grp_fir_filter_Pipeline_VITIS_LOOP_13_21_fu_149_ap_start_reg  |   1|   0|    1|          0|
+    |grp_fir_filter_Pipeline_VITIS_LOOP_13_22_fu_165_ap_start_reg  |   1|   0|    1|          0|
+    |grp_fir_filter_Pipeline_VITIS_LOOP_13_23_fu_181_ap_start_reg  |   1|   0|    1|          0|
+    |grp_fir_filter_Pipeline_VITIS_LOOP_13_2_fu_133_ap_start_reg   |   1|   0|    1|          0|
+    |i_1_reg_335                                                   |   8|   0|    8|          0|
+    |i_fu_76                                                       |   8|   0|    8|          0|
+    |or_ln10_1_reg_362                                             |   5|   0|    7|          2|
+    |or_ln10_2_reg_368                                             |   5|   0|    7|          2|
+    |or_ln_reg_350                                                 |   6|   0|    7|          1|
+    |tmp_5_reg_356                                                 |   5|   0|    5|          0|
+    |trunc_ln10_reg_345                                            |   7|   0|    7|          0|
+    +--------------------------------------------------------------+----+----+-----+-----------+
+    |Total                                                         |  58|   0|   63|          5|
+    +--------------------------------------------------------------+----+----+-----+-----------+
+
+
+
+================================================================
+== Interface
+================================================================
+* Summary: 
++-------------------+-----+-----+------------+--------------+--------------+
+|     RTL Ports     | Dir | Bits|  Protocol  | Source Object|    C Type    |
++-------------------+-----+-----+------------+--------------+--------------+
+|ap_clk             |   in|    1|  ap_ctrl_hs|    fir_filter|  return value|
+|ap_rst             |   in|    1|  ap_ctrl_hs|    fir_filter|  return value|
+|ap_start           |   in|    1|  ap_ctrl_hs|    fir_filter|  return value|
+|ap_done            |  out|    1|  ap_ctrl_hs|    fir_filter|  return value|
+|ap_idle            |  out|    1|  ap_ctrl_hs|    fir_filter|  return value|
+|ap_ready           |  out|    1|  ap_ctrl_hs|    fir_filter|  return value|
+|input_r_address0   |  out|    7|   ap_memory|       input_r|         array|
+|input_r_ce0        |  out|    1|   ap_memory|       input_r|         array|
+|input_r_q0         |   in|   32|   ap_memory|       input_r|         array|
+|output_r_address0  |  out|    7|   ap_memory|      output_r|         array|
+|output_r_ce0       |  out|    1|   ap_memory|      output_r|         array|
+|output_r_we0       |  out|    1|   ap_memory|      output_r|         array|
+|output_r_d0        |  out|   32|   ap_memory|      output_r|         array|
+|coeffs_0_address0  |  out|    2|   ap_memory|      coeffs_0|         array|
+|coeffs_0_ce0       |  out|    1|   ap_memory|      coeffs_0|         array|
+|coeffs_0_q0        |   in|   32|   ap_memory|      coeffs_0|         array|
+|coeffs_1_address0  |  out|    2|   ap_memory|      coeffs_1|         array|
+|coeffs_1_ce0       |  out|    1|   ap_memory|      coeffs_1|         array|
+|coeffs_1_q0        |   in|   32|   ap_memory|      coeffs_1|         array|
+|coeffs_2_address0  |  out|    2|   ap_memory|      coeffs_2|         array|
+|coeffs_2_ce0       |  out|    1|   ap_memory|      coeffs_2|         array|
+|coeffs_2_q0        |   in|   32|   ap_memory|      coeffs_2|         array|
+|coeffs_3_address0  |  out|    2|   ap_memory|      coeffs_3|         array|
+|coeffs_3_ce0       |  out|    1|   ap_memory|      coeffs_3|         array|
+|coeffs_3_q0        |   in|   32|   ap_memory|      coeffs_3|         array|
++-------------------+-----+-----+------------+--------------+--------------+
+

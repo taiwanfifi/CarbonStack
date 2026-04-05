@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# OS
+.DS_Store
+
+# Environment
+.env
+*.log
+
+# Large data (download separately)
+datasets/
+carboncode/benchmarks/pie_integration/
+carboncode/benchmarks/carbonbench_v2/
+carboncode/hls_test/squashfs-root/
+carboncode/refs/
+
+# Vitis/Bambu project outputs
+proj_*/
+panda-temp/
+*.AppImage
+
+# Large binary
+*.json.gz
