@@ -1,0 +1,257 @@
+% Paper 6: Carbon-ActiveAgent — Active Inference for HLS DSE
+% Target: DAC / NeurIPS AI4Science Workshop
+
+\documentclass[conference]{IEEEtran}
+\usepackage{amsmath,graphicx,booktabs,hyperref}
+
+\title{Active Inference for HLS Design Space Exploration:\\
+When Should an LLM Agent Learn from Synthesis Feedback?}
+
+\author{
+\IEEEauthorblockN{William Chen}
+\IEEEauthorblockA{National Taiwan University}
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We investigate whether LLM agents can improve HLS pragma predictions
+through iterative synthesis feedback. Combining ideas from Active
+Inference (prediction-error-driven learning) and tool-augmented agents,
+we build Carbon-ActiveAgent: an agent that predicts synthesis outcomes,
+observes actual Vitis HLS results, and updates a hierarchical memory
+when surprised. Our experiments reveal three counter-intuitive findings:
+(1) the first LLM prediction (R0) is consistently the best---iterative
+refinement with feedback does not improve over single-shot prediction;
+(2) injecting learned rules into the prompt \emph{increases} failure
+rate from 7\% to 40\% (Context Distraction); and (3) fine-tuning a 2B
+model on 3,409 ForgeHLS samples produces PFS=0 despite 60\% loss
+reduction, suggesting a minimum model capacity threshold. These
+negative results establish important boundaries for LLM-based hardware
+optimization and motivate future work on larger fine-tuned models
+with synthesis-reward training.
+\end{abstract}
+
+\section{Introduction}
+
+Traditional HLS Design Space Exploration (DSE) tools like
+AutoDSE~\cite{autodse} search the pragma space through hundreds
+of synthesis iterations. Recent LLM-based approaches offer single-shot
+pragma prediction but lack the ability to improve from feedback.
+
+We ask: \emph{Can an LLM agent learn from synthesis results to
+progressively improve its predictions?}
+
+Inspired by Active Inference~\cite{friston2010}---the theory that
+biological agents minimize prediction error through a
+predict-observe-update loop---we design Carbon-ActiveAgent with three
+components:
+
+\begin{enumerate}
+    \item \textbf{Memory Pyramid}: Hierarchical storage (L0: events,
+    L1: episode digests, L2: learned rules) enabling cross-kernel
+    knowledge transfer.
+    \item \textbf{Surprise Gate}: Measures prediction error between
+    expected and actual synthesis metrics, triggering learning only
+    when surprised.
+    \item \textbf{Iterative Refinement}: LLM generates pragmas $\to$
+    Vitis synthesizes $\to$ structured feedback $\to$ LLM refines.
+\end{enumerate}
+
+\section{Architecture}
+
+\subsection{Memory Pyramid}
+
+The memory pyramid compresses optimization experience into three
+levels, inspired by ContinuousAgent~\cite{continuous}:
+
+\begin{itemize}
+    \item \textbf{L0 (Working)}: Raw synthesis results from current
+    optimization round. Discarded after L1 compression.
+    \item \textbf{L1 (Episodes)}: Digests of past kernel optimizations
+    (e.g., ``FIR: PFS=0.667, 3 pragmas''). Keeps last 20 episodes.
+    \item \textbf{L2 (Rules)}: Cross-kernel rules learned from
+    surprising outcomes (e.g., ``MAC-heavy kernels benefit from
+    coefficient array partitioning'').
+\end{itemize}
+
+This enables constant-size context regardless of optimization history.
+
+\subsection{Surprise Gate}
+
+Before each synthesis, the agent predicts expected improvement based
+on pragma types (PIPELINE, UNROLL, PARTITION). After synthesis, the
+prediction error determines learning intensity:
+
+\begin{equation}
+    \text{surprise} = |\text{improvement}_{\text{predicted}} -
+    \text{improvement}_{\text{actual}}|
+\end{equation}
+
+If surprise exceeds threshold $\tau$, the outcome is analyzed and
+a new L2 rule is generated. Low-surprise outcomes are expected and
+require no memory update.
+
+\subsection{Structured Feedback}
+
+Vitis HLS reports are converted to structured feedback with explicit
+resource budgets:
+
+\begin{verbatim}
+Latency: 1028 cycles
+DSP: 6/50 (12%) [OK]
+LUT: 1672/10000 (17%) [OK]
+Rules: Change at most 2 pragmas per round
+\end{verbatim}
+
+This prevents the ``DSP explosion'' observed in unstructured feedback
+(where the model interpreted ``you have room'' as ``use maximum
+resources'').
+
+\section{Experiments}
+
+\subsection{Closed-Loop Iterative Refinement}
+
+We run 3 kernels $\times$ 5 rounds on Gemma4, with Vitis HLS
+synthesis on AWS between each round (Table~\ref{tab:iterative}).
+
+\begin{table}[t]
+\centering
+\caption{Closed-loop iterative refinement. R0 (first prediction)
+is consistently the best. Subsequent rounds oscillate or regress.}
+\label{tab:iterative}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Kernel} & \textbf{R0} & \textbf{R1} & \textbf{R2} & \textbf{R3} & \textbf{Best} \\
+\midrule
+FIR      & \textbf{18}  & 64    & 2050  & 18   & \textbf{18} \\
+DCT      & \textbf{34}  & 514   & 258   & 258  & \textbf{34} \\
+DotProd  & \textbf{257} & 257   & FAIL  & 258  & \textbf{257} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Finding 1}: R0 is the ceiling. The model's best pragma
+suggestion occurs at the first attempt. Feedback-based refinement
+cannot surpass single-shot prediction for 4.5B models.
+
+\subsection{Memory Injection A/B Test}
+
+We compare baseline (no memory) vs. memory-augmented prompts
+on 5 kernels $\times$ 3 seeds (Table~\ref{tab:memory}).
+
+\begin{table}[t]
+\centering
+\caption{Memory injection A/B test. Memory context does not
+significantly improve PFS and increases failure rate.}
+\label{tab:memory}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Condition} & \textbf{Mean PFS} & \textbf{Std} & \textbf{Fail\%} & \textbf{t-stat} \\
+\midrule
+Baseline (no memory)  & 0.889 & 0.097 & 7\%  & --- \\
+With memory context   & 0.933 & 0.070 & 40\% & 1.25 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Finding 2}: Memory injection is not statistically significant
+($t=1.25 < 2.0$) and \emph{increases} failure rate from 7\% to 40\%.
+This is another manifestation of Context Distraction: learned rules
+injected as prompt context compete with the target code for the
+model's limited attention.
+
+\subsection{Fine-tuning Attempt}
+
+We LoRA fine-tune gemma-2-2b on 3,409 ForgeHLS Pareto samples
+(Table~\ref{tab:finetune}).
+
+\begin{table}[t]
+\centering
+\caption{Fine-tuning results. Loss decreases but PFS remains zero,
+suggesting a model capacity threshold.}
+\label{tab:finetune}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Config} & \textbf{Steps} & \textbf{Loss} & \textbf{PFS} & \textbf{Output} \\
+\midrule
+50 steps, full code    & 50   & 19$\to$13.8 & 0.000 & Garbled \\
+500 steps, full code   & 500  & 19$\to$7.3  & 0.000 & PIPELINE OFF \\
+3 epochs, pragma-only  & 626  & 19$\to$7.6  & 0.000 & Repeats prompt \\
+\midrule
+\emph{gemma4 zero-shot} & 0   & ---         & \textbf{0.883} & Valid pragmas \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Finding 3}: Despite 60\% loss reduction, the 2B model
+produces no valid pragma output. Meanwhile, the 4.5B MoE model
+achieves PFS=0.883 \emph{without any fine-tuning}. This suggests
+a minimum model capacity threshold for HLS pragma prediction that
+gemma-2-2b (2B dense) falls below, regardless of training data.
+
+\section{Discussion}
+
+\subsection{Why R0 is the Ceiling}
+
+Small models (4.5B) appear to express their full hardware optimization
+knowledge in a single inference. Additional context---whether from
+synthesis feedback, memory rules, or retrieved examples---acts as
+noise rather than signal. This is consistent with our Context
+Distraction finding (Paper 2).
+
+\subsection{The Knowledge Encoding Problem}
+
+Three approaches to encoding HLS knowledge were tested:
+\begin{enumerate}
+    \item \textbf{Prompt injection} (memory, RAG): Hurts due to
+    Context Distraction.
+    \item \textbf{Fine-tuning} (LoRA): Fails on 2B model; needs
+    larger base.
+    \item \textbf{Zero-shot prompting}: Works best for 4.5B MoE.
+\end{enumerate}
+
+The most effective knowledge encoding for small models is
+\emph{architectural}---MoE expert routing naturally specializes
+for different pragma types without explicit training.
+
+\subsection{Implications for AutoDSE Comparison}
+
+AutoDSE achieves near-Pareto results through 100--500 synthesis
+iterations. Our agent achieves PFS=0.883 in one shot but cannot
+improve further. The two approaches are complementary:
+CarbonCode provides a strong warm-start, reducing AutoDSE's
+search space by eliminating clearly suboptimal configurations.
+
+\subsection{Future Directions}
+
+\begin{enumerate}
+    \item \textbf{Larger model fine-tuning}: LoRA on 7B+ models
+    with ForgeHLS data may cross the capacity threshold.
+    \item \textbf{DPO training}: Direct Preference Optimization
+    using (Pareto, worst-case) code pairs as preference signal.
+    \item \textbf{Synthesis reward}: Using Vitis latency as reward
+    signal for RLHF, enabling true closed-loop learning.
+\end{enumerate}
+
+\section{Conclusion}
+
+We present Carbon-ActiveAgent, an Active Inference framework for
+HLS optimization. Our honest negative results---iterative refinement
+does not improve R0, memory injection increases failure rate,
+fine-tuning 2B models yields PFS=0---establish important boundaries
+for LLM-based hardware design. The most effective approach for
+current small models remains simple zero-shot prompting with
+post-process merge. Crossing these boundaries requires either
+larger models or fundamentally different training approaches
+(DPO, synthesis-reward RL).
+
+\bibliographystyle{IEEEtran}
+\begin{thebibliography}{3}
+\bibitem{autodse} A. Sohrabizadeh et al., ``AutoDSE,'' ACM TODAES, 2022.
+\bibitem{friston2010} K. Friston, ``The free-energy principle,'' Nature Rev. Neuroscience, 2010.
+\bibitem{continuous} ContinuousAgent, ``Active Inference for Autonomous Agents,'' 2025.
+\end{thebibliography}
+
+\end{document}
