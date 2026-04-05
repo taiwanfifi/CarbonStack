@@ -1,0 +1,62 @@
+[
+  {
+    "name": "ring_buffer",
+    "description": "Circular ring buffer with read/write pointers",
+    "code": "#define SIZE 64\nvoid ring_buffer(int data_in, int *data_out, int write, int read, int buf[SIZE]) {\n    #pragma HLS PIPELINE OFF\n    static int wr_ptr = 0, rd_ptr = 0;\n    if (write) {\n        buf[wr_ptr] = data_in;\n        wr_ptr = (wr_ptr + 1) % SIZE;\n    }\n    if (read) {\n        *data_out = buf[rd_ptr];\n        rd_ptr = (rd_ptr + 1) % SIZE;\n    }\n}",
+    "expected_pragmas": ["#pragma HLS PIPELINE II=1", "#pragma HLS ARRAY_PARTITION variable=buf type=cyclic dim=1 factor=2"]
+  },
+  {
+    "name": "leaky_relu",
+    "description": "Leaky ReLU activation for neural network",
+    "code": "#define N 256\nvoid leaky_relu(int input[N], int output[N], int alpha) {\n    #pragma HLS PIPELINE OFF\n    for (int i = 0; i < N; i++) {\n        #pragma HLS UNROLL factor=1\n        output[i] = (input[i] > 0) ? input[i] : (input[i] * alpha) >> 8;\n    }\n}",
+    "expected_pragmas": ["#pragma HLS PIPELINE II=1", "#pragma HLS UNROLL factor=8", "#pragma HLS ARRAY_PARTITION variable=input type=cyclic dim=1 factor=8"]
+  },
+  {
+    "name": "hamming_distance",
+    "description": "Compute Hamming distance between two binary vectors",
+    "code": "#define N 128\nvoid hamming_dist(int a[N], int b[N], int *distance) {\n    #pragma HLS PIPELINE OFF\n    int dist = 0;\n    for (int i = 0; i < N; i++) {\n        #pragma HLS UNROLL factor=1\n        dist += (a[i] != b[i]) ? 1 : 0;\n    }\n    *distance = dist;\n}",
+    "expected_pragmas": ["#pragma HLS PIPELINE II=1", "#pragma HLS UNROLL factor=8"]
+  },
+  {
+    "name": "rgb_to_gray",
+    "description": "Convert RGB image to grayscale",
+    "code": "#define H 32\n#define W 32\nvoid rgb2gray(int r[H][W], int g[H][W], int b[H][W], int gray[H][W]) {\n    #pragma HLS PIPELINE OFF\n    for (int i = 0; i < H; i++)\n        for (int j = 0; j < W; j++) {\n            #pragma HLS UNROLL factor=1\n            gray[i][j] = (r[i][j] * 77 + g[i][j] * 150 + b[i][j] * 29) >> 8;\n        }\n}",
+    "expected_pragmas": ["#pragma HLS PIPELINE II=1", "#pragma HLS UNROLL factor=4"]
+  },
+  {
+    "name": "popcount",
+    "description": "Population count (number of set bits)",
+    "code": "#define N 64\nvoid popcount(unsigned int data[N], int counts[N]) {\n    #pragma HLS PIPELINE OFF\n    for (int i = 0; i < N; i++) {\n        #pragma HLS UNROLL factor=1\n        int c = 0;\n        unsigned int x = data[i];\n        for (int b = 0; b < 32; b++)\n            c += (x >> b) & 1;\n        counts[i] = c;\n    }\n}",
+    "expected_pragmas": ["#pragma HLS PIPELINE II=1", "#pragma HLS UNROLL factor=8"]
+  },
+  {
+    "name": "moving_max",
+    "description": "Sliding window maximum",
+    "code": "#define N 256\n#define W 8\nvoid moving_max(int input[N], int output[N-W+1]) {\n    #pragma HLS PIPELINE OFF\n    for (int i = 0; i <= N-W; i++) {\n        #pragma HLS UNROLL factor=1\n        int mx = input[i];\n        for (int j = 1; j < W; j++)\n            if (input[i+j] > mx) mx = input[i+j];\n        output[i] = mx;\n    }\n}",
+    "expected_pragmas": ["#pragma HLS PIPELINE II=1", "#pragma HLS ARRAY_PARTITION variable=input type=cyclic dim=1 factor=4"]
+  },
+  {
+    "name": "bitonic_merge",
+    "description": "Bitonic merge step for sorting network",
+    "code": "#define N 32\nvoid bitonic_merge(int arr[N], int ascending) {\n    #pragma HLS PIPELINE OFF\n    for (int step = N/2; step > 0; step >>= 1) {\n        for (int i = 0; i < N; i++) {\n            #pragma HLS UNROLL factor=1\n            int j = i ^ step;\n            if (j > i) {\n                if ((ascending && arr[i] > arr[j]) || (!ascending && arr[i] < arr[j])) {\n                    int tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;\n                }\n            }\n        }\n    }\n}",
+    "expected_pragmas": ["#pragma HLS PIPELINE II=1", "#pragma HLS ARRAY_PARTITION variable=arr type=complete"]
+  },
+  {
+    "name": "cross_correlation",
+    "description": "1D cross-correlation of two signals",
+    "code": "#define N 128\n#define K 16\nvoid xcorr(int sig[N], int kernel[K], int out[N]) {\n    #pragma HLS PIPELINE OFF\n    for (int i = 0; i < N; i++) {\n        #pragma HLS PIPELINE OFF\n        int sum = 0;\n        for (int j = 0; j < K; j++) {\n            #pragma HLS UNROLL factor=1\n            int idx = i + j;\n            if (idx < N) sum += sig[idx] * kernel[j];\n        }\n        out[i] = sum;\n    }\n}",
+    "expected_pragmas": ["#pragma HLS PIPELINE II=1", "#pragma HLS ARRAY_PARTITION variable=kernel type=complete", "#pragma HLS UNROLL factor=16"]
+  },
+  {
+    "name": "ewma_filter",
+    "description": "Exponentially weighted moving average",
+    "code": "#define N 512\nvoid ewma(int input[N], int output[N], int alpha) {\n    #pragma HLS PIPELINE OFF\n    output[0] = input[0];\n    for (int i = 1; i < N; i++) {\n        #pragma HLS PIPELINE OFF\n        output[i] = (alpha * input[i] + (256 - alpha) * output[i-1]) >> 8;\n    }\n}",
+    "expected_pragmas": ["#pragma HLS PIPELINE II=1"]
+  },
+  {
+    "name": "parallel_prefix_max",
+    "description": "Parallel prefix maximum (scan)",
+    "code": "#define N 64\nvoid prefix_max(int in[N], int out[N]) {\n    #pragma HLS PIPELINE OFF\n    out[0] = in[0];\n    for (int i = 1; i < N; i++) {\n        #pragma HLS PIPELINE OFF\n        out[i] = (in[i] > out[i-1]) ? in[i] : out[i-1];\n    }\n}",
+    "expected_pragmas": ["#pragma HLS PIPELINE II=1"]
+  }
+]
