@@ -1,0 +1,116 @@
+% Tables for Paper 1: CarbonCode HLS
+
+% ============================================================
+% Table 1: Vitis HLS Synthesis Results
+% ============================================================
+\begin{table*}[t]
+\centering
+\caption{Vitis HLS v2025.2 Synthesis Results on Virtex UltraScale+ (xcvu9p).
+Baseline uses worst-case pragmas (PIPELINE OFF, UNROLL=1).
+Optimized uses LLM-suggested pragmas via post-process merge.}
+\label{tab:vitis}
+\begin{tabular}{lrrrrrrr}
+\toprule
+\textbf{Kernel} & \textbf{Domain} & \textbf{Base Lat} & \textbf{Opt Lat} & \textbf{Speedup} & \textbf{Base LUT} & \textbf{Opt LUT} & \textbf{Opt DSP} \\
+\midrule
+FIR Filter       & Telecom/DSP    & 2,050   & 1,028   & 2.0$\times$  & 352    & 1,672  & 6  \\
+GEMM 32$\times$32 & Linear Alg.   & 67,649  & 16,387  & 4.1$\times$  & 258    & 1,693  & 6  \\
+DCT 8$\times$8    & Signal Proc.  & 537     & 10      & 53.7$\times$ & 346    & 480    & 24 \\
+Stencil 2D        & Image Proc.   & 8,191   & 4,502   & 1.8$\times$  & 455    & 677    & 6  \\
+Conv2D 3$\times$3 & AI/Vision     & 8,191   & 4,502   & 1.8$\times$  & 458    & 713    & 6  \\
+AES Encrypt       & Crypto        & 18      & 11      & 1.6$\times$  & 157    & 22,117 & 0  \\
+KMeans            & ML            & 770     & 67      & 11.5$\times$ & 719    & 1,216  & 36 \\
+Bubble Sort       & Sorting       & 253     & 4       & 63.3$\times$ & 185    & 282    & 0  \\
+Reduction         & Arithmetic    & 1,026   & 130     & 7.9$\times$  & 122    & 337    & 0  \\
+MatVec            & Linear Alg.   & 4,098   & 2,050   & 2.0$\times$  & 312    & 1,399  & 6  \\
+Dot Product       & Linear Alg.   & 513     & 34      & 15.1$\times$ & 130    & 495    & 24 \\
+Sobel Edge        & Image Proc.   & 8,191   & 3,602   & 2.3$\times$  & 824    & 904    & 0  \\
+5G NR FIR         & 5G Telecom    & ---     & 1,036   & ---          & ---    & 1,056  & 16 \\
+\midrule
+\textbf{Median}   &               &         &         & \textbf{3.2$\times$} & & & \\
+\textbf{Mean}     &               &         &         & \textbf{13.0$\times$} & & & \\
+\bottomrule
+\end{tabular}
+\vspace{-2mm}
+\end{table*}
+
+% ============================================================
+% Table 2: Model Comparison (Fair, pass@1)
+% ============================================================
+\begin{table}[t]
+\centering
+\caption{Model comparison on HLS pragma prediction (pass@1, 5 kernels).
+PFS = Pragma Fidelity Score (parameter accuracy, 0--1).}
+\label{tab:models}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Model} & \textbf{Params} & \textbf{Type} & \textbf{Type Match} & \textbf{PFS} \\
+\midrule
+\textbf{Gemma4}    & 4.5B active & MoE   & 86.7\% & \textbf{0.883} \\
+Qwen 2.5 Coder     & 7B          & Dense & 86.7\% & 0.633 \\
+DeepSeek-R1         & 14B         & Dense & 66.7\% & 0.756 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================================
+% Table 3: Ablation Study
+% ============================================================
+\begin{table}[t]
+\centering
+\caption{Ablation study: impact of removing pragma types from the prompt.
+Gemma4 model, 5 kernels.}
+\label{tab:ablation}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Configuration} & \textbf{Type Match} & \textbf{PFS} & \textbf{$\Delta$PFS} \\
+\midrule
+Full (all pragmas)      & 86.7\% & 0.817 & --- \\
+No ARRAY\_PARTITION     & 40.0\% & 0.497 & $-$39\% \\
+No PIPELINE             & 50.0\% & 0.463 & $-$43\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================================
+% Table 4: Context Distraction Effect
+% ============================================================
+\begin{table}[t]
+\centering
+\caption{Context Distraction Effect: providing more context hurts small models.
+10 kernels, Qwen 2.5 Coder 7B.}
+\label{tab:distraction}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Strategy} & \textbf{Context} & \textbf{Type Match} & \textbf{PFS} \\
+\midrule
+A1: Zero-shot       & None     & \textbf{90.0\%} & \textbf{0.818} \\
+A3: HLS Rules       & Rules    & 86.7\% & 0.781 \\
+A5: Aggressive       & Strong   & \textbf{90.0\%} & \textbf{0.820} \\
+A4: Few-shot RAG     & Examples & 73.4\% & 0.752 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================================
+% Table 5: Multi-seed Statistics
+% ============================================================
+\begin{table}[t]
+\centering
+\caption{Multi-seed statistics for Gemma4 pragma prediction.
+5 seeds $\times$ 5 kernels, varying temperature (0.3--0.7).}
+\label{tab:stats}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Kernel} & \textbf{Mean PFS} & \textbf{Std} & \textbf{Min} & \textbf{Max} \\
+\midrule
+FIR Filter      & 0.850 & 0.122 & 0.750 & 1.000 \\
+GEMM            & 0.667 & 0.134 & 0.533 & 0.800 \\
+DCT             & 0.987 & 0.027 & 0.933 & 1.000 \\
+Stencil 2D      & 0.813 & 0.154 & 0.667 & 1.000 \\
+Black-Scholes   & 0.854 & 0.027 & 0.800 & 0.867 \\
+\midrule
+\textbf{Overall} & \textbf{0.834} & \textbf{0.093} & & \\
+\bottomrule
+\end{tabular}
+\end{table}
