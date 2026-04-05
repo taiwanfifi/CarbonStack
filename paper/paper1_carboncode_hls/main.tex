@@ -189,6 +189,33 @@ All models run locally via Ollama on NVIDIA RTX 4090 (24GB VRAM).
 
 \input{tables}
 
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/speedup_bar.png}
+\caption{Vitis HLS synthesis speedup for 12 kernels with LLM-optimized
+pragmas vs.\ baseline (PIPELINE OFF, UNROLL=1). DCT and Bubble Sort
+achieve over 50$\times$ speedup through aggressive pipelining and unrolling.}
+\label{fig:speedup}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.85\columnwidth]{figures/model_comparison.png}
+\caption{Pragma Fidelity Score by model. Gemma4 (4.5B MoE) outperforms
+the 7B dense Qwen model by 40\%, suggesting MoE architectures are
+particularly suited for structured hardware optimization.}
+\label{fig:models}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/context_distraction.png}
+\caption{Context Distraction Effect: providing retrieval-augmented
+examples (A4) \emph{degrades} both type match (90\%$\to$73\%) and
+PFS (0.82$\to$0.75) compared to zero-shot (A1).}
+\label{fig:distraction}
+\end{figure}
+
 \subsection{HLS Pragma Prediction Accuracy}
 
 We evaluate pragma prediction on 30 ForgeHLS kernels spanning DSP, linear

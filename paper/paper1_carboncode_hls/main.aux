@@ -24,25 +24,26 @@
 \@writefile{toc}{\contentsline {section}{\numberline {IV}Experimental Setup}{2}{section.4}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {IV-A}}Benchmarks}{2}{subsection.4.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {IV-B}}Models}{2}{subsection.4.2}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Vitis HLS synthesis speedup for 12 kernels with LLM-optimized pragmas vs.\ baseline (PIPELINE OFF, UNROLL=1). DCT and Bubble Sort achieve over 50$\times $ speedup through aggressive pipelining and unrolling.}}{2}{figure.1}\protected@file@percent }
+\newlabel{fig:speedup}{{1}{2}{Vitis HLS synthesis speedup for 12 kernels with LLM-optimized pragmas vs.\ baseline (PIPELINE OFF, UNROLL=1). DCT and Bubble Sort achieve over 50$\times $ speedup through aggressive pipelining and unrolling}{figure.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Pragma Fidelity Score by model. Gemma4 (4.5B MoE) outperforms the 7B dense Qwen model by 40\%, suggesting MoE architectures are particularly suited for structured hardware optimization.}}{2}{figure.2}\protected@file@percent }
+\newlabel{fig:models}{{2}{2}{Pragma Fidelity Score by model. Gemma4 (4.5B MoE) outperforms the 7B dense Qwen model by 40\%, suggesting MoE architectures are particularly suited for structured hardware optimization}{figure.2}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {IV-C}}Synthesis Tools}{2}{subsection.4.3}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {V}Results}{2}{section.5}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-A}}HLS Pragma Prediction Accuracy}{2}{subsection.5.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-B}}Vitis HLS Synthesis Validation}{2}{subsection.5.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-C}}Model Comparison}{2}{subsection.5.3}\protected@file@percent }
 \@writefile{lot}{\contentsline {table}{\numberline {I}{\ignorespaces Vitis HLS v2025.2 Synthesis Results on Virtex UltraScale+ (xcvu9p). Baseline uses worst-case pragmas (PIPELINE OFF, UNROLL=1). Optimized uses LLM-suggested pragmas via post-process merge.}}{3}{table.1}\protected@file@percent }
 \newlabel{tab:vitis}{{I}{3}{Vitis HLS v2025.2 Synthesis Results on Virtex UltraScale+ (xcvu9p). Baseline uses worst-case pragmas (PIPELINE OFF, UNROLL=1). Optimized uses LLM-suggested pragmas via post-process merge}{table.1}{}}
 \@writefile{lot}{\contentsline {table}{\numberline {II}{\ignorespaces Model comparison on HLS pragma prediction (pass@1, 5 kernels). PFS = Pragma Fidelity Score (parameter accuracy, 0--1).}}{3}{table.2}\protected@file@percent }
 \newlabel{tab:models}{{II}{3}{Model comparison on HLS pragma prediction (pass@1, 5 kernels). PFS = Pragma Fidelity Score (parameter accuracy, 0--1)}{table.2}{}}
 \@writefile{lot}{\contentsline {table}{\numberline {III}{\ignorespaces Ablation study: impact of removing pragma types from the prompt. Gemma4 model, 5 kernels.}}{3}{table.3}\protected@file@percent }
 \newlabel{tab:ablation}{{III}{3}{Ablation study: impact of removing pragma types from the prompt. Gemma4 model, 5 kernels}{table.3}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-D}}Ablation Study}{3}{subsection.5.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-E}}Context Distraction Effect}{3}{subsection.5.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-B}}Vitis HLS Synthesis Validation}{3}{subsection.5.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-C}}Model Comparison}{3}{subsection.5.3}\protected@file@percent }
 \@writefile{lot}{\contentsline {table}{\numberline {IV}{\ignorespaces Context Distraction Effect: providing more context hurts small models. 10 kernels, Qwen 2.5 Coder 7B.}}{3}{table.4}\protected@file@percent }
 \newlabel{tab:distraction}{{IV}{3}{Context Distraction Effect: providing more context hurts small models. 10 kernels, Qwen 2.5 Coder 7B}{table.4}{}}
 \@writefile{lot}{\contentsline {table}{\numberline {V}{\ignorespaces Multi-seed statistics for Gemma4 pragma prediction. 5 seeds $\times $ 5 kernels, varying temperature (0.3--0.7).}}{3}{table.5}\protected@file@percent }
 \newlabel{tab:stats}{{V}{3}{Multi-seed statistics for Gemma4 pragma prediction. 5 seeds $\times $ 5 kernels, varying temperature (0.3--0.7)}{table.5}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {VI}Discussion}{3}{section.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-A}}Why MoE Outperforms Dense Models}{3}{subsection.6.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-D}}Ablation Study}{3}{subsection.5.4}\protected@file@percent }
 \citation{autodse}
 \bibstyle{IEEEtran}
 \bibcite{forgehls}{1}
@@ -52,6 +53,11 @@
 \bibcite{gpt4aigchip}{5}
 \bibcite{chipnemo}{6}
 \bibcite{phi3}{7}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Context Distraction Effect: providing retrieval-augmented examples (A4) \emph  {degrades} both type match (90\%$\to $73\%) and PFS (0.82$\to $0.75) compared to zero-shot (A1).}}{4}{figure.3}\protected@file@percent }
+\newlabel{fig:distraction}{{3}{4}{Context Distraction Effect: providing retrieval-augmented examples (A4) \emph {degrades} both type match (90\%$\to $73\%) and PFS (0.82$\to $0.75) compared to zero-shot (A1)}{figure.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-E}}Context Distraction Effect}{4}{subsection.5.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {VI}Discussion}{4}{section.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-A}}Why MoE Outperforms Dense Models}{4}{subsection.6.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-B}}When NOT to Optimize}{4}{subsection.6.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-C}}Comparison with Traditional DSE}{4}{subsection.6.3}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-D}}Limitations}{4}{subsection.6.4}\protected@file@percent }

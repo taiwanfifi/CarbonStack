@@ -1236,3 +1236,25 @@ Feedback format v2 (with resource budgets) successfully prevents permanent
 regression — the model can recover from bad rounds. But it can't go beyond R0.
 
 File: check/closedloop_1775378035.json
+
+=== Finding #45: Carbon-Verify Depth — Real Simulation ===
+Date: 2026-04-05
+
+Setup: LLM generates Verilog testbench → iverilog compiles → vvp simulates
+GPU: Vast.ai Q_RTX_6000, Model: Gemma4
+
+Results (3 modules):
+  mux_correct:    TB generated (111 lines) → compiled ✅ → simulated ✅ → PASS ✅
+  counter_buggy:  TB generated (141 lines) → compile FAILED (syntax error line 117)
+  adder_buggy:    TB generation FAILED (no code block extracted)
+
+Key finding: 1/3 fully working end-to-end (generate → compile → simulate → correct result).
+The mux testbench correctly tested 5+ input combinations and reported PASS.
+
+Limitations:
+- 2/3 failed: LLM-generated Verilog has syntax errors or extraction issues
+- Need better prompt engineering for Verilog testbench generation
+- Cocotb (Python) testbenches may be more reliable than pure Verilog
+
+This is Paper 5 material: "Can LLMs generate hardware testbenches that actually run?"
+Answer: Yes, but only 33% compile rate for Verilog. Room for improvement.
