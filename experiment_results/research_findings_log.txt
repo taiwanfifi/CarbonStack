@@ -1167,3 +1167,26 @@ CarbonCode paper data now complete:
 ✅ PFS metric
 
 File: check/stats_ablation_1775369723.json
+
+=== Finding #42: Complete Vitis Synthesis Table (17 kernels) ===
+Date: 2026-04-05
+
+17 kernels synthesized on Vitis HLS v2025.2:
+  13 improved, 2 regressed, 2 neutral
+  Median speedup: 3.2x
+  Mean speedup: 13.0x  
+  Max: 63.2x (Bubble Sort), 53.7x (DCT), 15.1x (DotProd)
+
+New batch 5 results:
+  Dot Product: 513→34 (15.1x) ✅
+  Sobel Edge:  8191→3602 (2.3x) ✅
+  Viterbi:     18→131 (WORSE — baseline already auto-pipelined)
+  Prefix Sum:  256→255 (no change — sequential dependency)
+
+Regressions analysis:
+  Viterbi: Vitis auto-pipeline already achieves II=1. Adding manual pragmas
+           + PARTITION caused routing overhead → latency increased 7x.
+  Histogram: PARTITION complete on 256-element array → resource explosion.
+
+This is important for the paper: not all pragmas help. The LLM needs to
+recognize when to NOT add pragmas (leave it to the compiler).

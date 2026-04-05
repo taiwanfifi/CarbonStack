@@ -1,0 +1,193 @@
+
+
+================================================================
+== Vitis HLS Report for 'viterbi_Pipeline_VITIS_LOOP_8_1'
+================================================================
+* Date:           Sun Apr  5 07:12:47 2026
+
+* Version:        2025.2 (Build 6295257 on Nov 14 2025)
+* Project:        proj_viterbi_opt
+* Solution:       sol1 (Vivado IP Flow Target)
+* Product family: virtexuplus
+* Target device:  xcvu9p-flga2104-2-i
+
+
+================================================================
+== Performance Estimates
+================================================================
++ Timing: 
+    * Summary: 
+    +--------+----------+----------+------------+
+    |  Clock |  Target  | Estimated| Uncertainty|
+    +--------+----------+----------+------------+
+    |ap_clk  |  10.00 ns|  1.481 ns|     2.70 ns|
+    +--------+----------+----------+------------+
+
++ Latency: 
+    * Summary: 
+    +---------+---------+----------+----------+-----+-----+-------------------+
+    |  Latency (cycles) |  Latency (absolute) |  Interval |      Pipeline     |
+    |   min   |   max   |    min   |    max   | min | max |        Type       |
+    +---------+---------+----------+----------+-----+-----+-------------------+
+    |       18|       18|  0.180 us|  0.180 us|    0|    0|  loop pipeline stp|
+    +---------+---------+----------+----------+-----+-----+-------------------+
+
+    + Detail: 
+        * Instance: 
+        N/A
+
+        * Loop: 
+        +------------------+---------+---------+----------+-----------+-----------+------+----------+
+        |                  |  Latency (cycles) | Iteration|  Initiation Interval  | Trip |          |
+        |     Loop Name    |   min   |   max   |  Latency |  achieved |   target  | Count| Pipelined|
+        +------------------+---------+---------+----------+-----------+-----------+------+----------+
+        |- VITIS_LOOP_8_1  |       16|       16|         2|          1|          1|    16|       yes|
+        +------------------+---------+---------+----------+-----------+-----------+------+----------+
+
+
+
+================================================================
+== Utilization Estimates
+================================================================
+* Summary: 
++---------------------+---------+------+---------+---------+-----+
+|         Name        | BRAM_18K|  DSP |    FF   |   LUT   | URAM|
++---------------------+---------+------+---------+---------+-----+
+|DSP                  |        -|     -|        -|        -|    -|
+|Expression           |        -|     -|        0|       66|    -|
+|FIFO                 |        -|     -|        -|        -|    -|
+|Instance             |        -|     -|        -|        -|    -|
+|Memory               |        -|     -|        -|        -|    -|
+|Multiplexer          |        -|     -|        0|      180|    -|
+|Register             |        -|     -|       12|        -|    -|
++---------------------+---------+------+---------+---------+-----+
+|Total                |        0|     0|       12|      246|    0|
++---------------------+---------+------+---------+---------+-----+
+|Available SLR        |     1440|  2280|   788160|   394080|  320|
++---------------------+---------+------+---------+---------+-----+
+|Utilization SLR (%)  |        0|     0|       ~0|       ~0|    0|
++---------------------+---------+------+---------+---------+-----+
+|Available            |     4320|  6840|  2364480|  1182240|  960|
++---------------------+---------+------+---------+---------+-----+
+|Utilization (%)      |        0|     0|       ~0|       ~0|    0|
++---------------------+---------+------+---------+---------+-----+
+
++ Detail: 
+    * Instance: 
+    N/A
+
+    * DSP: 
+    N/A
+
+    * Memory: 
+    N/A
+
+    * FIFO: 
+    N/A
+
+    * Expression: 
+    +--------------------+----------+----+---+----+------------+------------+
+    |    Variable Name   | Operation| DSP| FF| LUT| Bitwidth P0| Bitwidth P1|
+    +--------------------+----------+----+---+----+------------+------------+
+    |add_ln8_fu_233_p2   |         +|   0|  0|  12|           5|           1|
+    |cost_fu_287_p2      |         +|   0|  0|  39|          32|          32|
+    |icmp_ln8_fu_227_p2  |      icmp|   0|  0|  13|           5|           6|
+    |ap_enable_pp0       |       xor|   0|  0|   2|           1|           2|
+    +--------------------+----------+----+---+----+------------+------------+
+    |Total               |          |   0|  0|  66|          43|          41|
+    +--------------------+----------+----+---+----+------------+------------+
+
+    * Multiplexer: 
+    +-------------------------+----+-----------+-----+-----------+
+    |           Name          | LUT| Input Size| Bits| Total Bits|
+    +-------------------------+----+-----------+-----+-----------+
+    |ap_done_int              |   9|          2|    1|          2|
+    |ap_enable_reg_pp0_iter1  |   9|          2|    1|          2|
+    |ap_sig_allocacmp_s_1     |   9|          2|    5|         10|
+    |cost_10_out              |   9|          2|   32|         64|
+    |cost_11_out              |   9|          2|   32|         64|
+    |cost_12_out              |   9|          2|   32|         64|
+    |cost_13_out              |   9|          2|   32|         64|
+    |cost_14_out              |   9|          2|   32|         64|
+    |cost_15_out              |   9|          2|   32|         64|
+    |cost_1_out               |   9|          2|   32|         64|
+    |cost_2_out               |   9|          2|   32|         64|
+    |cost_3_out               |   9|          2|   32|         64|
+    |cost_4_out               |   9|          2|   32|         64|
+    |cost_5_out               |   9|          2|   32|         64|
+    |cost_6_out               |   9|          2|   32|         64|
+    |cost_7_out               |   9|          2|   32|         64|
+    |cost_8_out               |   9|          2|   32|         64|
+    |cost_9_out               |   9|          2|   32|         64|
+    |cost_out                 |   9|          2|   32|         64|
+    |s_fu_100                 |   9|          2|    5|         10|
+    +-------------------------+----+-----------+-----+-----------+
+    |Total                    | 180|         40|  524|       1048|
+    +-------------------------+----+-----------+-----+-----------+
+
+    * Register: 
+    +-------------------------+---+----+-----+-----------+
+    |           Name          | FF| LUT| Bits| Const Bits|
+    +-------------------------+---+----+-----+-----------+
+    |ap_CS_fsm                |  1|   0|    1|          0|
+    |ap_done_reg              |  1|   0|    1|          0|
+    |ap_enable_reg_pp0_iter1  |  1|   0|    1|          0|
+    |s_fu_100                 |  5|   0|    5|          0|
+    |trunc_ln8_reg_403        |  4|   0|    4|          0|
+    +-------------------------+---+----+-----+-----------+
+    |Total                    | 12|   0|   12|          0|
+    +-------------------------+---+----+-----+-----------+
+
+
+
+================================================================
+== Interface
+================================================================
+* Summary: 
++--------------------+-----+-----+------------+---------------------------------+--------------+
+|      RTL Ports     | Dir | Bits|  Protocol  |          Source Object          |    C Type    |
++--------------------+-----+-----+------------+---------------------------------+--------------+
+|ap_clk              |   in|    1|  ap_ctrl_hs|  viterbi_Pipeline_VITIS_LOOP_8_1|  return value|
+|ap_rst              |   in|    1|  ap_ctrl_hs|  viterbi_Pipeline_VITIS_LOOP_8_1|  return value|
+|ap_start            |   in|    1|  ap_ctrl_hs|  viterbi_Pipeline_VITIS_LOOP_8_1|  return value|
+|ap_done             |  out|    1|  ap_ctrl_hs|  viterbi_Pipeline_VITIS_LOOP_8_1|  return value|
+|ap_idle             |  out|    1|  ap_ctrl_hs|  viterbi_Pipeline_VITIS_LOOP_8_1|  return value|
+|ap_ready            |  out|    1|  ap_ctrl_hs|  viterbi_Pipeline_VITIS_LOOP_8_1|  return value|
+|emit_address0       |  out|    4|   ap_memory|                             emit|         array|
+|emit_ce0            |  out|    1|   ap_memory|                             emit|         array|
+|emit_q0             |   in|   32|   ap_memory|                             emit|         array|
+|obs_load            |   in|   32|     ap_none|                         obs_load|        scalar|
+|cost_15_out         |  out|   32|      ap_vld|                      cost_15_out|       pointer|
+|cost_15_out_ap_vld  |  out|    1|      ap_vld|                      cost_15_out|       pointer|
+|cost_14_out         |  out|   32|      ap_vld|                      cost_14_out|       pointer|
+|cost_14_out_ap_vld  |  out|    1|      ap_vld|                      cost_14_out|       pointer|
+|cost_13_out         |  out|   32|      ap_vld|                      cost_13_out|       pointer|
+|cost_13_out_ap_vld  |  out|    1|      ap_vld|                      cost_13_out|       pointer|
+|cost_12_out         |  out|   32|      ap_vld|                      cost_12_out|       pointer|
+|cost_12_out_ap_vld  |  out|    1|      ap_vld|                      cost_12_out|       pointer|
+|cost_11_out         |  out|   32|      ap_vld|                      cost_11_out|       pointer|
+|cost_11_out_ap_vld  |  out|    1|      ap_vld|                      cost_11_out|       pointer|
+|cost_10_out         |  out|   32|      ap_vld|                      cost_10_out|       pointer|
+|cost_10_out_ap_vld  |  out|    1|      ap_vld|                      cost_10_out|       pointer|
+|cost_9_out          |  out|   32|      ap_vld|                       cost_9_out|       pointer|
+|cost_9_out_ap_vld   |  out|    1|      ap_vld|                       cost_9_out|       pointer|
+|cost_8_out          |  out|   32|      ap_vld|                       cost_8_out|       pointer|
+|cost_8_out_ap_vld   |  out|    1|      ap_vld|                       cost_8_out|       pointer|
+|cost_7_out          |  out|   32|      ap_vld|                       cost_7_out|       pointer|
+|cost_7_out_ap_vld   |  out|    1|      ap_vld|                       cost_7_out|       pointer|
+|cost_6_out          |  out|   32|      ap_vld|                       cost_6_out|       pointer|
+|cost_6_out_ap_vld   |  out|    1|      ap_vld|                       cost_6_out|       pointer|
+|cost_5_out          |  out|   32|      ap_vld|                       cost_5_out|       pointer|
+|cost_5_out_ap_vld   |  out|    1|      ap_vld|                       cost_5_out|       pointer|
+|cost_4_out          |  out|   32|      ap_vld|                       cost_4_out|       pointer|
+|cost_4_out_ap_vld   |  out|    1|      ap_vld|                       cost_4_out|       pointer|
+|cost_3_out          |  out|   32|      ap_vld|                       cost_3_out|       pointer|
+|cost_3_out_ap_vld   |  out|    1|      ap_vld|                       cost_3_out|       pointer|
+|cost_2_out          |  out|   32|      ap_vld|                       cost_2_out|       pointer|
+|cost_2_out_ap_vld   |  out|    1|      ap_vld|                       cost_2_out|       pointer|
+|cost_1_out          |  out|   32|      ap_vld|                       cost_1_out|       pointer|
+|cost_1_out_ap_vld   |  out|    1|      ap_vld|                       cost_1_out|       pointer|
+|cost_out            |  out|   32|      ap_vld|                         cost_out|       pointer|
+|cost_out_ap_vld     |  out|    1|      ap_vld|                         cost_out|       pointer|
++--------------------+-----+-----+------------+---------------------------------+--------------+
+

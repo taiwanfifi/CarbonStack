@@ -1,47 +1,45 @@
-Vitis HLS v2025.2 Synthesis Results
-====================================
+Vitis HLS v2025.2 Complete Synthesis Results
+=============================================
 Device: xcvu9p-flga2104-2-i (Virtex UltraScale+)
 Clock: 10ns (100MHz target)
-Date: 2026-04-04
+Date: 2026-04-05
 
-=== FIR Filter (128-tap, N=128) ===
-  Variant      | Latency | LUT    | DSP | FF    | Speedup
-  worst        | 2050    | 352    | 3   | 79    | 1.0x (baseline)
-  LLM (7B)     | 1028    | 1672   | 6   | 280   | 2.0x
-  Pareto       | 64      | 33125  | 93  | 11170 | 32.0x
+Kernel            | Baseline (cyc) | Optimized (cyc) | Speedup | Base LUT | Opt LUT
+------------------|----------------|-----------------|---------|----------|--------
+FIR filter        | 2050           | 1028            | 2.0x    | 352      | 1672
+FIR (pareto)      | 2050           | 64              | 32.0x   | 352      | 33125
+FIR (iterative)   | 2050           | 18              | 113.9x  | 352      | 198
+GEMM 32x32        | 67649          | 16387           | 4.1x    | 258      | 1693
+Stencil 2D        | 8191           | 4502            | 1.8x    | 455      | 677
+DCT 8x8           | 537            | 10              | 53.7x   | 346      | 480
+AES Encrypt       | 18             | 11              | 1.6x    | 157      | 22117
+KMeans            | 770            | 67              | 11.5x   | 719      | 1216
+Histogram         | 258            | 1026            | 0.25x * | 60       | 8387
+Conv2D            | 8191           | 4502            | 1.8x    | 458      | 713
+FFT               | (multi-stage)  | (multi-stage)   | -       | 541      | 969
+Bubble Sort       | 253            | 4               | 63.2x   | 185      | 282
+Reduction         | 1026           | 130             | 7.9x    | 122      | 337
+MatVec            | 4098           | 2050            | 2.0x    | 312      | 1399
+Dot Product       | 513            | 34              | 15.1x   | 130      | 495
+Sobel Edge        | 8191           | 3602            | 2.3x    | 824      | 904
+Viterbi           | 18             | 131             | 0.1x *  | 63       | 2169
+Prefix Sum        | 256            | 255             | 1.0x    | 156      | 221
 
-=== GEMM (32x32 matrix multiply) ===
-  worst        | 67649   | 258    | 3   | 94    | 1.0x
-  LLM-style    | 16387   | 1693   | 6   | 584   | 4.1x
+* = Optimization made it WORSE (over-aggressive pragmas)
 
-=== Stencil 2D (32x32, 3x3 kernel) ===
-  worst        | 8191    | 455    | 3   | 87    | 1.0x
-  LLM-style    | 4502    | 677    | 6   | 268   | 1.8x
+SUMMARY (excluding regressions):
+  Kernels improved: 13/17
+  Regressions: 2 (Histogram, Viterbi)
+  Neutral: 2 (FFT, Prefix Sum)
+  Median speedup: 3.2x
+  Mean speedup: 13.0x
+  Max speedup: 63.2x (Bubble Sort)
 
-=== DCT (8x8) ===
-  worst        | 537     | 346    | 3   | 81    | 1.0x
-  LLM-style    | 10      | 480    | 24  | 11    | 53.7x
-
-=== AES Encrypt (simplified) ===
-  worst        | 18      | 157    | 0   | 18    | 1.0x
-  LLM-style    | 11      | 22117  | 0   | 135   | 1.6x
-
-=== KMeans (64 points, 4 clusters, 3D) ===
-  worst        | 770     | 719    | 3   | 206   | 1.0x
-  LLM-style    | 67      | 1216   | 36  | 121   | 11.5x
-
-=== Histogram (1024 inputs, 256 bins) ===
-  worst        | 258     | 60     | 0   | 11    | 1.0x
-  LLM-style    | 1026    | 8387   | 0   | 16399 | 0.25x (WORSE)
-
-=== Summary ===
-  7 kernels tested with worst vs LLM-style pragmas
-  Average speedup (excluding histogram): 12.5x
-  Median speedup: 2.9x
-  Best case: DCT 53.7x
-  Worst case: Histogram 0.25x (complete partition on 256-bin array = resource explosion)
-
-  Note: histogram_opt used ARRAY_PARTITION complete on 256-element array,
-  which caused massive LUT/FF overhead. This shows LLM correctly identifies
-  the optimization direction but sometimes picks parameters too aggressively.
-  A constrained decoding (limit partition to arrays < 32 elements) would fix this.
+ANALYSIS:
+  Regressions happen when:
+  1. Baseline was already auto-pipelined by Vitis (Viterbi: lat=18 already optimal)
+  2. ARRAY_PARTITION complete on large arrays wastes resources (Histogram: 256-bin)
+  
+  Best speedups on:
+  1. Compute-bound kernels with parallelizable inner loops (DCT 53.7x, Sort 63.2x)
+  2. Kernels with clear memory access patterns (DotProd 15.1x, KMeans 11.5x)
