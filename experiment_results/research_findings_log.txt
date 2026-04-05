@@ -1484,3 +1484,29 @@ reduces loss 60% but does not produce valid pragma suggestions (PFS=0).
 This suggests a minimum model capacity threshold for structured hardware
 optimization tasks, which Gemma4 (4.5B MoE) meets via zero-shot prompting
 but Gemma2 (2B dense) does not meet even after fine-tuning."
+
+=== Finding #56: 120-Kernel Large-Scale Evaluation ===
+Date: 2026-04-06
+
+120 kernels from ForgeHLS (435 available, 120 sampled), Gemma4
+
+Results:
+  Successful: 103/120 (85.8%)
+  Type Match: 75.7%
+  PFS: mean=0.544, std=0.268, 95% CI=[0.492, 0.595]
+
+IMPORTANT: This is MUCH lower than our previous 5-kernel result (PFS=0.883).
+The 5-kernel subset was biased toward simple, well-known kernels.
+True population PFS is ~0.544 with wide variance.
+
+OOD (Out-of-Distribution) Test: 10 custom kernels NOT in ForgeHLS
+  Success: 10/10
+  Avg types correct: 2.5/3
+  → NO data leakage. Model generalizes to unseen kernels.
+
+This changes the paper story:
+- Old claim: "PFS=0.834" → misleading (5 cherry-picked kernels)
+- New claim: "PFS=0.544 on 120 kernels, with 95% CI [0.49, 0.60]"
+- The model knows WHICH pragma types to use (75.7%) but struggles
+  with EXACT parameters on diverse kernels
+- OOD generalization confirmed (2.5/3 types on unseen kernels)
