@@ -93,6 +93,26 @@ A4: Few-shot RAG     & Examples & 73.4\% & 0.752 \\
 \end{table}
 
 % ============================================================
+% Table 5a: Time-to-Solution Comparison
+% ============================================================
+\begin{table}[t]
+\centering
+\caption{Time-to-solution comparison for HLS pragma optimization.
+CarbonCode achieves near-optimal results 1000$\times$ faster than DSE.}
+\label{tab:time}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Approach} & \textbf{Time} & \textbf{Synth. Runs} & \textbf{Quality} \\
+\midrule
+AutoDSE~\cite{autodse}  & 8--24 hrs & 100--500 & Pareto-optimal \\
+HARP~\cite{harp}         & 2--6 hrs  & 50--200  & Near-Pareto \\
+\textbf{CarbonCode}      & \textbf{10 sec} & \textbf{1} & PFS=0.834 \\
+Human expert              & 2--3 days & 10--50   & Varies \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================================
 % Table 5: Multi-seed Statistics
 % ============================================================
 \begin{table}[t]
