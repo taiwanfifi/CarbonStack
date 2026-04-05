@@ -1190,3 +1190,23 @@ Regressions analysis:
 
 This is important for the paper: not all pragmas help. The LLM needs to
 recognize when to NOT add pragmas (leave it to the compiler).
+
+=== Finding #43: LDPC Decoder + 5G FIR Synthesized ===
+Date: 2026-04-05
+
+Telecom-specific kernels validated on Vitis HLS:
+
+1. 5G NR FIR (16-tap, 128 samples):
+   Latency=1036 cycles, DSP=16, LUT=1056, Fmax=386 MHz
+   With PIPELINE II=1 + PARTITION complete + UNROLL
+
+2. LDPC Min-Sum Decoder (BG2-like, 20 VN, 8 CN):
+   Baseline: Latency=7, DSP=3, LUT=194, Fmax=208 MHz
+   Optimized: Synthesis failed (complete partition too aggressive on 2D arrays)
+
+Significance: These are REAL telecom kernels used in 5G NR baseband.
+FIR for channel filtering, LDPC for error correction.
+This connects CarbonStack to professor's telecom expertise.
+
+LDPC opt failure teaches: complete partition on cn_to_vn[8][6] 2D array
+is too aggressive. Need cyclic or partial partition for irregular access patterns.
