@@ -1284,3 +1284,27 @@ To catch bugs, the testbench must be generated from:
 This finding shapes Paper 5 (Carbon-Verify):
 "Spec-driven testbench generation vs code-driven: why LLMs can't find bugs
 they helped create."
+
+=== Finding #47: Context Length vs PFS (Paper 2 supplement) ===
+Date: 2026-04-05
+
+Experiment: Vary number of few-shot examples (0, 1, 2, 3, 5) on DCT kernel.
+Model: Gemma4, single kernel (DCT).
+
+Results:
+  0 examples → PFS = 1.000 (prompt 548 chars)
+  1 example  → PFS = 1.000 (prompt 769 chars)
+  2 examples → PFS = 1.000 (prompt 903 chars)  
+  3 examples → PFS = 0.667 (prompt 1023 chars) ← DISTRACTION!
+  5 examples → PFS = 1.000 (prompt 1277 chars) ← recovered (stochastic)
+
+Observation: Distraction occurs non-monotonically. 3 examples caused
+a significant drop (1.000→0.667) but 5 examples recovered.
+This suggests distraction is PROBABILISTIC, not deterministic —
+more examples increase the RISK of distraction but don't guarantee it.
+
+For Paper 2: "Context Distraction is a stochastic phenomenon that
+increases in probability with context length, manifesting as sporadic
+attention failures rather than gradual degradation."
+
+Need: more kernels × more seeds to establish statistical curve.
