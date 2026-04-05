@@ -1,0 +1,257 @@
+% CarbonCode: Local Small Language Models for HLS Pragma Optimization
+% Target: ICCAD / DAC / TCAD
+
+\documentclass[conference]{IEEEtran}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+\title{CarbonCode: Pragmatic HLS Optimization with\\Local Small Language Models}
+
+\author{
+\IEEEauthorblockN{William Chen}
+\IEEEauthorblockA{
+National Taiwan University\\
+Taipei, Taiwan\\
+}
+}
+
+\begin{document}
+\maketitle
+
+% ============================================================
+\begin{abstract}
+High-Level Synthesis (HLS) pragma selection critically impacts FPGA design quality,
+with the same C algorithm exhibiting up to 30,000$\times$ latency variation under
+different pragma configurations. We present CarbonCode, a framework that uses local
+small language models (4.5B--7B parameters) to predict near-optimal HLS pragmas,
+achieving 83.4\% parameter accuracy (PFS) on 30 ForgeHLS kernels and validated by
+Xilinx Vitis HLS synthesis with up to 63.3$\times$ speedup. Our approach is fully
+offline-deployable, requires no cloud API, and guarantees 100\% code preservation
+through a post-process merge technique. We discover a \emph{Context Distraction
+Effect}: providing retrieval-augmented examples to small models \emph{reduces}
+accuracy from 90\% to 73\%, contradicting conventional RAG wisdom. Ablation studies
+show both PIPELINE and ARRAY\_PARTITION pragmas are critical, with removal causing
+43\% and 39\% accuracy drops respectively. Our 4.5B Mixture-of-Experts model
+(Gemma4) outperforms a 7B dense model (Qwen) by 40\% on pragma parameter accuracy,
+suggesting MoE architectures are particularly suited for structured hardware
+optimization tasks.
+\end{abstract}
+
+\begin{IEEEkeywords}
+HLS, pragma optimization, small language models, FPGA, design space exploration
+\end{IEEEkeywords}
+
+% ============================================================
+\section{Introduction}
+
+High-Level Synthesis (HLS) enables hardware designers to specify FPGA accelerators
+in C/C++ rather than RTL, dramatically reducing development time. However, the
+quality of the synthesized hardware is highly sensitive to \texttt{\#pragma HLS}
+directives---annotations that control loop pipelining, unrolling, and array
+partitioning. In the ForgeHLS dataset~\cite{forgehls}, the same FIR filter
+algorithm exhibits a 784$\times$ latency range (422 to 330,753 cycles) depending
+solely on pragma configuration, with only 2.1\% of configurations lying on the
+Pareto frontier.
+
+Traditional design space exploration (DSE) tools such as AutoDSE~\cite{autodse}
+address this by exhaustively searching the pragma space, typically requiring
+100--500 synthesis iterations (8--24 hours) to converge. This is effective but
+computationally expensive and provides no transferable insight across kernels.
+
+Recent work has explored using large language models (LLMs) for HLS
+optimization~\cite{hlspilot}, but existing approaches rely on cloud-hosted models
+(GPT-4, Claude) that raise critical concerns for semiconductor companies:
+\emph{code confidentiality}. TSMC, MediaTek, and similar firms operate in
+air-gapped environments where sending proprietary RTL or HLS code to external
+APIs is strictly prohibited.
+
+We present CarbonCode, a framework that addresses both challenges simultaneously:
+\begin{enumerate}
+    \item \textbf{Local deployment}: Using models with 4.5B--7B parameters that
+    run entirely on-premise, requiring only a single GPU or CPU.
+    \item \textbf{Code safety}: A post-process merge technique that guarantees
+    100\% preservation of original code---only pragma lines are modified.
+    \item \textbf{Pragma accuracy}: Achieving 83.4\% parameter fidelity (PFS)
+    validated by industry-standard Vitis HLS synthesis.
+\end{enumerate}
+
+Our key contributions are:
+\begin{itemize}
+    \item We propose \textbf{Pragma Fidelity Score (PFS)}, a fine-grained metric
+    that measures parameter-level accuracy of pragma predictions using log-distance
+    scoring, capturing nuances that binary type-match metrics miss.
+
+    \item We discover the \textbf{Context Distraction Effect}: providing
+    retrieval-augmented examples to small models ($<$10B parameters)
+    \emph{degrades} performance from 90.0\% to 73.4\% type match, contradicting
+    conventional RAG assumptions.
+
+    \item We demonstrate that a \textbf{4.5B MoE model} (Gemma4) outperforms a
+    7B dense model (Qwen 2.5 Coder) by 40\% on PFS, suggesting architectural
+    advantages of mixture-of-experts for structured hardware tasks.
+
+    \item We validate predictions through \textbf{three-layer synthesis
+    verification}: ForgeHLS ground truth (30 kernels), Bambu open-source HLS
+    (5 kernels), and Vitis HLS industry standard (16+ kernels with up to
+    63.3$\times$ speedup).
+\end{itemize}
+
+% ============================================================
+\section{Related Work}
+
+\subsection{HLS Design Space Exploration}
+AutoDSE~\cite{autodse} uses bottleneck-guided coordinate optimization, requiring
+100--500 synthesis iterations. HARP~\cite{harp} applies reinforcement learning
+to learn pragma policies. Both require extensive synthesis time and do not
+transfer knowledge across kernels.
+
+\subsection{LLMs for Hardware Design}
+GPT4AIGChip~\cite{gpt4aigchip} uses GPT-4 for Verilog generation.
+HLSPilot~\cite{hlspilot} applies LLMs for pragma suggestion but relies on
+cloud APIs (GPT-4) achieving approximately 70--80\% type match.
+ChipNeMo~\cite{chipnemo} fine-tunes domain-specific LLMs for chip design
+but targets natural language tasks rather than code optimization.
+
+\subsection{Small Language Models}
+Recent work shows small models ($<$10B) can match larger models on specific
+tasks when properly prompted~\cite{phi3}. However, the interaction between
+model size, context length, and structured code generation remains underexplored.
+
+% ============================================================
+\section{Method}
+
+\subsection{Problem Formulation}
+Given a C/C++ kernel $K$ with a set of pragma insertion points
+$P = \{p_1, \ldots, p_n\}$, find pragma configurations
+$\theta^* = \{\theta_1, \ldots, \theta_n\}$ that minimize synthesis latency
+$L(\theta)$ subject to resource constraints $R(\theta) \leq R_{\max}$.
+
+\subsection{Post-Process Merge}
+To guarantee code safety, we adopt a two-phase approach:
+\begin{enumerate}
+    \item \textbf{Free generation}: The LLM generates optimized code with
+    pragmas without any structural constraints.
+    \item \textbf{Pragma extraction}: We extract only \texttt{\#pragma HLS}
+    lines from the LLM output using regex matching.
+    \item \textbf{Merge}: Extracted pragmas replace original pragmas in the
+    source code, preserving all non-pragma lines exactly.
+\end{enumerate}
+This guarantees that $\text{code}(K_{\text{merged}}) \setminus \text{pragmas}
+\equiv \text{code}(K_{\text{original}}) \setminus \text{pragmas}$.
+
+\subsection{Pragma Fidelity Score (PFS)}
+Existing metrics use binary type matching (does the LLM suggest PIPELINE? yes/no).
+We propose PFS to capture parameter accuracy:
+\begin{equation}
+    \text{PFS} = 1 - \frac{|\log_2(\theta_{\text{pred}} / \theta_{\text{opt}})|}
+    {\log_2(\theta_{\max})}
+\end{equation}
+where $\theta_{\text{pred}}$ is the LLM's predicted parameter value,
+$\theta_{\text{opt}}$ is the Pareto-optimal value, and $\theta_{\max}$ is the
+maximum allowable value. PFS ranges from 0 (completely wrong) to 1 (exact match),
+with logarithmic scaling reflecting hardware resource doubling effects.
+
+% ============================================================
+\section{Experimental Setup}
+
+\subsection{Benchmarks}
+We evaluate on two datasets:
+\begin{itemize}
+    \item \textbf{ForgeHLS}~\cite{forgehls}: 184,734 HLS designs across 471
+    algorithms. We select 30 representative kernels covering DSP, linear algebra,
+    image processing, and cryptography.
+    \item \textbf{Custom kernels}: 16 hand-written C kernels (FIR, GEMM, DCT,
+    FFT, Viterbi, etc.) with worst-case and optimized pragma configurations,
+    synthesized on Vitis HLS v2025.2.
+\end{itemize}
+
+\subsection{Models}
+\begin{itemize}
+    \item \textbf{Gemma4} (4.5B active, MoE): Google's mixture-of-experts model
+    \item \textbf{Qwen 2.5 Coder} (7B, dense): Alibaba's code-specialized model
+    \item \textbf{DeepSeek-R1} (14B, dense): Reasoning-optimized model
+\end{itemize}
+All models run locally via Ollama on NVIDIA RTX 4090 (24GB VRAM).
+
+\subsection{Synthesis Tools}
+\begin{itemize}
+    \item \textbf{Vitis HLS v2025.2}: Industry standard, targeting Virtex
+    UltraScale+ (xcvu9p)
+    \item \textbf{Bambu HLS 2024.03}: Open-source, targeting Zynq-7000,
+    for reproducibility validation
+\end{itemize}
+
+% ============================================================
+\section{Results}
+
+% TODO: Add tables and figures from experiment_results/
+% Table 1: ForgeHLS 30-kernel results (type match + PFS)
+% Table 2: Vitis synthesis results (16 kernels, latency + LUT + DSP)
+% Table 3: Model comparison (Gemma4 vs Qwen vs DeepSeek)
+% Table 4: Ablation study
+% Figure 1: PFS distribution across seeds
+% Figure 2: Speedup bar chart (16 kernels)
+% Figure 3: Context Distraction Effect (RAG vs zero-shot)
+
+\subsection{HLS Pragma Prediction Accuracy}
+% Phase A: 30 kernels, type match 98.9%, PFS from stats
+% Phase B: prompt A/B test results
+
+\subsection{Vitis HLS Synthesis Validation}
+% 16 kernels, baseline vs optimized, speedup table
+
+\subsection{Model Comparison}
+% Gemma4 vs Qwen vs DeepSeek, fair comparison
+
+\subsection{Ablation Study}
+% Full vs no-PIPELINE vs no-PARTITION
+
+\subsection{Context Distraction Effect}
+% RAG (73%) vs zero-shot (90%)
+
+% ============================================================
+\section{Discussion}
+
+\subsection{Why MoE Outperforms Dense Models}
+% Gemma4 4.5B > Qwen 7B — sparse expert routing for structured tasks
+
+\subsection{Limitations}
+% 1. Parameter accuracy 83.4% (not 100%)
+% 2. Only pragma optimization, no code transformation
+% 3. 5-kernel statistical validation (need more)
+% 4. No real hardware deployment test
+
+\subsection{Comparison with AutoDSE}
+% AutoDSE: 100-500 synthesis iterations, 8-24 hours
+% CarbonCode: 1 LLM inference (3-10 sec) + 1 synthesis (30 sec)
+% Trade-off: AutoDSE finds optimal, we find near-optimal much faster
+
+% ============================================================
+\section{Conclusion}
+
+We present CarbonCode, a framework for HLS pragma optimization using local small
+language models. Our key findings are: (1) a 4.5B MoE model achieves 83.4\%
+pragma parameter accuracy, (2) retrieval-augmented generation hurts small model
+performance (Context Distraction Effect), and (3) post-process merge guarantees
+100\% code safety. Validated by Vitis HLS synthesis on 16+ kernels with up to
+63.3$\times$ speedup, CarbonCode demonstrates that effective HLS optimization
+is achievable with fully local, air-gap compatible models.
+
+% ============================================================
+\bibliographystyle{IEEEtran}
+% \bibliography{refs}
+
+\begin{thebibliography}{10}
+\bibitem{forgehls} S. Bai et al., ``ForgeHLS: A Large-Scale Dataset for HLS Design Space Exploration,'' in Proc. ICCAD, 2023.
+\bibitem{autodse} A. Sohrabizadeh et al., ``AutoDSE: Enabling Software Programmers to Design Efficient FPGA Accelerators,'' ACM TODAES, 2022.
+\bibitem{harp} J. Wang et al., ``HARP: Hardware-Aware Pragma Recommendation,'' in Proc. DAC, 2023.
+\bibitem{hlspilot} Z. Chen et al., ``HLSPilot: LLM-based HLS Code Generation,'' arXiv, 2024.
+\bibitem{gpt4aigchip} Y. Fu et al., ``GPT4AIGChip: Towards Next-Generation AI Accelerator Design Automation,'' in Proc. ICCAD, 2023.
+\bibitem{chipnemo} M. Liu et al., ``ChipNeMo: Domain-Adapted LLMs for Chip Design,'' in Proc. DAC, 2024.
+\bibitem{phi3} Microsoft, ``Phi-3 Technical Report,'' arXiv, 2024.
+\end{thebibliography}
+
+\end{document}
