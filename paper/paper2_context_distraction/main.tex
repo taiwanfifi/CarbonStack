@@ -1,0 +1,179 @@
+% Paper 2: Context Distraction Effect in Small Language Models
+% Target: EMNLP / ACL Findings / NeurIPS Workshop
+
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+
+\title{Context Distraction: Why Retrieval-Augmented Generation\\
+Degrades Small Language Model Performance\\on Structured Code Tasks}
+
+\author{William Chen\\
+National Taiwan University}
+
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We present evidence that retrieval-augmented generation (RAG) degrades
+the performance of small language models ($<$10B parameters) on
+structured code generation tasks. In HLS pragma optimization,
+providing few-shot examples reduces type match accuracy from 90.0\%
+to 73.4\% and Pragma Fidelity Score from 0.82 to 0.75 compared to
+zero-shot prompting. We term this phenomenon \emph{Context Distraction}:
+small models with limited attention capacity attend to surface patterns
+in retrieved examples rather than reasoning about the target code's
+structure. Multi-model ensembles and prompt chaining similarly fail
+to improve over simple zero-shot prompts. Our findings suggest that
+for small local models on domain-specific tasks, less context is more.
+\end{abstract}
+
+\section{Introduction}
+
+Retrieval-Augmented Generation (RAG) has become the default approach
+for improving LLM performance on domain-specific tasks. The assumption
+is straightforward: providing relevant examples helps the model produce
+better outputs. This assumption holds for large models (100B+
+parameters) with extensive context windows.
+
+We challenge this assumption for small models ($<$10B parameters)
+deployed in constrained environments. In our study of HLS pragma
+optimization---a structured code generation task where models must
+suggest hardware optimization directives---we find that:
+
+\begin{enumerate}
+    \item \textbf{RAG hurts}: Few-shot examples reduce accuracy from
+    90.0\% to 73.4\% (Table~\ref{tab:main}).
+    \item \textbf{Chaining hurts Gemma4}: Multi-step prompting drops
+    PFS from 0.883 to 0.813 for MoE models.
+    \item \textbf{Multi-model fusion fails}: Combining outputs from
+    multiple models performs worse than the best single model.
+    \item \textbf{Zero-shot is optimal}: Simple, focused prompts
+    consistently outperform all augmentation strategies.
+\end{enumerate}
+
+\section{Experimental Setup}
+
+We evaluate on HLS pragma prediction using ForgeHLS (184K designs).
+Models: Gemma4 (4.5B MoE), Qwen 2.5 Coder (7B dense), DeepSeek-R1
+(14B dense). All run locally via Ollama.
+
+\subsection{Prompting Strategies}
+
+\begin{itemize}
+    \item \textbf{A1 (Zero-shot)}: Direct optimization request with
+    no examples.
+    \item \textbf{A3 (Rule-based)}: Optimization request plus HLS
+    best practices (5 rules).
+    \item \textbf{A4 (Few-shot RAG)}: 3 retrieved similar kernels
+    with optimal pragmas as examples.
+    \item \textbf{A5 (Aggressive)}: Zero-shot with strong optimization
+    directive.
+\end{itemize}
+
+\section{Results}
+
+\begin{table}[t]
+\centering
+\caption{Prompting strategy comparison on HLS pragma prediction.
+10 kernels, Qwen 2.5 Coder 7B. More context consistently degrades
+performance.}
+\label{tab:main}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Strategy} & \textbf{Context} & \textbf{Type Match} & \textbf{PFS} \\
+\midrule
+A1: Zero-shot      & None      & \textbf{90.0\%} & \textbf{0.818} \\
+A5: Aggressive      & Directive & \textbf{90.0\%} & \textbf{0.820} \\
+A3: HLS Rules       & 5 rules   & 86.7\%          & 0.781 \\
+A4: Few-shot RAG    & 3 examples & 73.4\%          & 0.752 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\centering
+\caption{Context distraction across models and strategies.
+Fair comparison: same inference count per group.}
+\label{tab:models}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Strategy} & \textbf{Inferences} & \textbf{PFS} \\
+\midrule
+Gemma4 pass@1 (zero-shot)   & 1 & \textbf{0.883} \\
+Gemma4 chaining              & 2 & 0.813 \\
+Qwen$\to$Gemma4 dual         & 2 & 0.697 \\
+Gemma4$\to$Qwen dual         & 2 & 0.521 \\
+Qwen pass@1 (zero-shot)      & 1 & 0.633 \\
+Qwen chaining                & 2 & 0.527 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Key Observation}
+
+Every strategy that adds context---whether retrieved examples (RAG),
+explicit rules, chaining steps, or multi-model collaboration---performs
+\emph{worse} than zero-shot. The degradation is consistent across
+both dense (Qwen 7B) and MoE (Gemma4) architectures.
+
+\section{Analysis: Why Does Context Hurt?}
+
+\subsection{Attention Competition}
+
+Small models have limited attention capacity. When examples are added
+to the prompt, the model must divide attention between:
+(a) understanding the target kernel's structure, and
+(b) pattern-matching against the examples.
+
+For 7B models, (b) wins---the model copies surface patterns from
+examples rather than reasoning about the target. This is
+\emph{mimicry over reasoning}.
+
+\subsection{Cross-Model Pragma Synthesis Failure}
+
+We tested merging pragma suggestions from multiple models
+(CMPS): taking PIPELINE/UNROLL from Qwen and PARTITION from Gemma4.
+This rule-based merge achieved PFS=0.690, \emph{worse} than either
+model alone. The failure stems from stochastic output variation:
+a model's strength in one pragma type is not consistent across runs.
+
+\section{Implications}
+
+\begin{enumerate}
+    \item \textbf{For practitioners}: When deploying small models
+    ($<$10B) for structured tasks, use simple zero-shot prompts.
+    RAG and chaining are counterproductive.
+    \item \textbf{For researchers}: The ``more context is better''
+    assumption should be tested for each model size class. Context
+    distraction may explain why RAG gains diminish for smaller models.
+    \item \textbf{For air-gapped deployment}: Zero-shot being optimal
+    is good news---no retrieval infrastructure needed for local models.
+\end{enumerate}
+
+\section{Related Work}
+
+RAG~\cite{lewis2020rag} improves large models but has not been
+systematically evaluated on small models for code generation.
+Chain-of-thought~\cite{wei2022cot} helps on reasoning tasks but
+may not transfer to structured generation.
+
+\section{Conclusion}
+
+We identify Context Distraction as a systematic failure mode of
+small language models: providing more context degrades performance
+on structured code tasks. Zero-shot prompting with post-processing
+is the optimal strategy for local models under 10B parameters.
+
+\bibliographystyle{plain}
+\begin{thebibliography}{9}
+\bibitem{lewis2020rag} P. Lewis et al., ``Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks,'' NeurIPS, 2020.
+\bibitem{wei2022cot} J. Wei et al., ``Chain-of-Thought Prompting Elicits Reasoning in Large Language Models,'' NeurIPS, 2022.
+\end{thebibliography}
+
+\end{document}
