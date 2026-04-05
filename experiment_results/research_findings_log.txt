@@ -1458,3 +1458,29 @@ Expected improvement: shorter output → model focuses on pragma decisions.
 
 Future: DPO (Pareto vs worst code pairs) recommended by Gemini as
 2026 best practice for HLS code optimization.
+
+=== Finding #54: Fine-tune v3 (Pragma-only) Still PFS=0 ===
+Date: 2026-04-06
+
+v3: pragma-only output, lr=1e-4, cosine decay, 3 full epochs, 53 minutes
+Loss: 19 → 7.6 (60% decrease)
+But PFS = 0.000 on all 3 test kernels.
+
+Model outputs: repeats prompt + "PIPELINE OFF" instead of optimized pragmas.
+gemma-2-2b is fundamentally too small for this task.
+
+Comparison:
+  gemma-2-2b fine-tuned (3409 samples, 3 epochs): PFS = 0.000
+  gemma4 zero-shot (no fine-tune):                 PFS = 0.883
+
+Fine-tune conclusion: 2B model can't learn HLS pragma optimization.
+Need either:
+1. Larger base model (7B+) with LoRA → needs bigger GPU
+2. Much more training data + steps
+3. DPO instead of SFT
+
+For the paper: "Fine-tuning a 2B model on 3409 HLS samples over 3 epochs 
+reduces loss 60% but does not produce valid pragma suggestions (PFS=0).
+This suggests a minimum model capacity threshold for structured hardware
+optimization tasks, which Gemma4 (4.5B MoE) meets via zero-shot prompting
+but Gemma2 (2B dense) does not meet even after fine-tuning."
