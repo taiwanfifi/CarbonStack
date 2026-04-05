@@ -1433,3 +1433,28 @@ Implication: LLM Verilog capability << LLM C capability.
 For Carbon-Verify, consider Cocotb (Python) over pure Verilog testbenches.
 
 500-step fine-tune still running in background on GPU.
+
+=== Finding #53: Fine-tune Method Review (Gemini) ===
+Date: 2026-04-06
+
+Gemini identified 3 critical issues with our fine-tune approach:
+
+1. DATA FORMAT: Output was entire code (95% wasted on C syntax copying).
+   Fix: Output ONLY pragma lines (3.4x shorter)
+
+2. MODEL MISMATCH: Training gemma-2-2b but evaluating gemma4 (4.5B MoE).
+   Gemma4 MoE can't be LoRA'd on 24GB (needs full 26B weights for training).
+   Fix: Use gemma-2-2b but with pragma-only format, or use Gemma4 E4B.
+
+3. HYPERPARAMS: lr=2e-4 too high for 4-bit LoRA.
+   Fix: lr=1e-4, cosine decay, 3 epochs
+
+500-step results (old format, full code output):
+  Loss: 19 → 7.3 (62% decrease)
+  But PFS=0 at 50 steps (model not learned yet)
+  
+v3 training started (pragma-only, lr=1e-4, 3 epochs).
+Expected improvement: shorter output → model focuses on pragma decisions.
+
+Future: DPO (Pareto vs worst code pairs) recommended by Gemini as
+2026 best practice for HLS code optimization.
