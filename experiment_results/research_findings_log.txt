@@ -1623,3 +1623,35 @@ aligns with the professor's telecom expertise. This strengthens the
 
 Weakness in Image/Signal (FFT, Sobel) suggests these need more complex
 loop analysis that the model struggles with.
+
+=== Finding #62: Deep IO Analysis — Why Image/Signal Fails ===
+Date: 2026-04-06
+
+Examined actual LLM input/output for each failing kernel:
+
+IMAGE/SIGNAL failures (PFS=0.320):
+1. fft_strided (PFS=0.125): LLM uses PARTITION complete on ALL arrays.
+   But Pareto uses cyclic factor=1 (almost no partition). FFT's stride
+   access pattern doesn't benefit from full partition.
+   → FIX: Image/Signal skill should say "be conservative with PARTITION"
+
+2. gaussian_blur (PFS=0.550): LLM adds PIPELINE II=1 but Pareto says
+   PIPELINE OFF. Blur has loop-carried dependencies.
+   → FIX: Skill should say "check dependencies before pipelining"
+
+3. sample_rate_conversion (PFS=0.533): LLM MISSES PARTITION entirely.
+   → FIX: Skill should explicitly say "PARTITION input/output arrays"
+
+DSP/FILTER success (PFS=0.847):
+- dac_8bit (PFS=0.850): LLM matches Pareto almost exactly
+- packet_filtering (PFS=0.850): Simple structure, correct pragmas
+
+COMMON FAILURE ACROSS ALL CATEGORIES:
+- factor=1024 (array size as factor) — fixed by capping
+- LLM adds PIPELINE II=1 to loops with dependencies — needs guidance
+
+ROUTING + SKILLS DESIGN:
+- Step 1: LLM classifies kernel type (50-token call)
+- Step 2: Use type-specific skill with domain rules
+- 5 skills designed: dsp_filter, image_signal, crypto, control, linear_algebra
+- A/B test ready, waiting for GPU (fine-tune finishing)
