@@ -1738,3 +1738,30 @@ CONCLUSION:
   Best pipeline: Generic prompt → LLM → Post-process (factor cap) → Done
   NOT: Routing → Skill → LLM → Checker → Fix → Done
   Simpler is better for small models.
+
+=== Finding #66: Checker Standalone = No Additional Improvement ===
+Date: 2026-04-06
+
+40 kernels, A/B test:
+  A (generic + factor cap): PFS = 0.694
+  B (generic + checker multiround): PFS = 0.696
+  Diff: +0.002 (t=1.01, NOT significant)
+  Improved: 1/40, Worse: 0/40
+
+Factor capping already captures all the checker's value.
+Multi-round feedback from rule-based checker adds nothing beyond
+what simple post-processing already provides.
+
+FINAL CONCLUSION on optimization strategies:
+  ✅ Simple prompt + factor cap = BEST (PFS=0.645-0.694, 1 LLM call)
+  ❌ RAG = worse (-16%)
+  ❌ Chaining = worse (-8%)
+  ❌ Routing + Skills = worse (-18.7%)
+  ❌ Memory injection = worse (more failures)
+  ❌ Multiround checker = no improvement (+0.002)
+  ❌ Iterative refinement = R0 is ceiling
+  ❌ Fine-tune 2B = PFS 0
+  ⚠️ Fine-tune 7B = PFS 0.311 (partial)
+
+The ONLY thing that works beyond basic prompting is POST-PROCESSING
+(factor capping = +18.6%). Everything else is either harmful or neutral.

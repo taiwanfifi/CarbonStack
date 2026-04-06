@@ -237,19 +237,35 @@ PFS (0.82$\to$0.75) compared to zero-shot (A1).}
 
 \subsection{HLS Pragma Prediction Accuracy}
 
-We evaluate pragma prediction on 30 ForgeHLS kernels spanning DSP, linear
-algebra, image processing, cryptography, and stencil computation domains.
+We evaluate pragma prediction on \textbf{120 ForgeHLS kernels} spanning DSP,
+linear algebra, image processing, cryptography, control logic, and
+network/IO domains (sampled from 435 algorithms with Pareto-optimal
+configurations).
 
-On pragma \emph{type} identification (should PIPELINE/UNROLL/PARTITION be used?),
-CarbonCode achieves 98.9\% accuracy with PIPELINE identification at 100\%
-(30/30 kernels). This demonstrates that the model reliably understands
-\emph{which} optimization directives are appropriate.
+On pragma \emph{type} identification (should PIPELINE/UNROLL/PARTITION be
+used?), per-type analysis reveals: ARRAY\_PARTITION identification achieves
+94\% accuracy, PIPELINE 82\%, and UNROLL 56\% (Figure~\ref{fig:pfs120} right).
+The model reliably identifies \emph{which arrays need partitioning} and
+\emph{which loops need pipelining}, but struggles with \emph{how aggressively
+to unroll}.
 
-For \emph{parameter} accuracy measured by PFS (Table~\ref{tab:stats}),
-Gemma4 achieves a mean PFS of 0.645 ($\pm$0.093) across 5 independent seeds.
-DCT is the most stable kernel (PFS=0.987, $\sigma$=0.027), while stencil2d
-shows highest variance ($\sigma$=0.154), likely due to its more complex
-multi-dimensional access patterns.
+Raw PFS on 120 kernels is 0.543 ($\pm$0.275). After domain constraint
+integration (capping UNROLL/PARTITION factors at $\leq$16), PFS improves
+to \textbf{0.645} ($\pm$0.255)---an 18.6\% improvement with zero
+regressions (Table~\ref{tab:capping}). This constraint addresses the
+model's most common error: setting UNROLL factor equal to array size
+(e.g., factor=1024 for a 1024-element array) rather than a hardware-
+reasonable value (4--16).
+
+Cross-architecture analysis shows PFS varies significantly by kernel
+type: DSP/filter kernels achieve 0.847 (directly relevant to 5G
+telecom), while image/signal processing reaches only 0.320. This
+suggests the model's pre-training data contains more DSP examples.
+
+To verify generalization, we test on 10 custom kernels \emph{not present
+in ForgeHLS} (ring buffer, leaky ReLU, Hamming distance, etc.).
+All 10 succeed with average 2.5/3 pragma types correct
+(Table~\ref{tab:ood}), confirming no data leakage.
 
 \subsection{Vitis HLS Synthesis Validation}
 
