@@ -1655,3 +1655,30 @@ ROUTING + SKILLS DESIGN:
 - Step 2: Use type-specific skill with domain rules
 - 5 skills designed: dsp_filter, image_signal, crypto, control, linear_algebra
 - A/B test ready, waiting for GPU (fine-tune finishing)
+
+=== Finding #63: Qwen 7B Fine-tune = PFS 0.311 (better than 2B, worse than zero-shot) ===
+Date: 2026-04-06
+
+Qwen 2.5 Coder 7B QLoRA (3409 samples, 3 epochs, lr=5e-5):
+  Loss: initial → 0.047 (extremely low!)
+  Training time: 7357 seconds (~2 hours)
+  
+Evaluation (3 kernels):
+  FIR:     PFS=0.333 (generated PARTITION but missed PIPELINE)
+  DCT:     PFS=0.333 (generated PARTITION with wrong dims)
+  DotProd: PFS=0.267 (generated generic PARTITION)
+
+Comparison:
+  gemma-2-2b fine-tuned:  PFS = 0.000 (complete failure)
+  Qwen 7B fine-tuned:     PFS = 0.311 (generates pragmas but misses some)
+  Gemma4 zero-shot:       PFS = 0.645 (120 kernels, with capping)
+
+Key insight: 7B IS above the capability threshold (PFS>0 unlike 2B).
+But fine-tune quality is still below zero-shot Gemma4.
+Possible causes:
+1. Only 3 epochs — may need 10+ epochs
+2. CoT format may be confusing the model
+3. Training data quality — worst→pareto mapping may not be ideal
+4. Model sees prompt text in output (leaking instruction into generation)
+
+Routing + Skills + Multiround A/B test running on GPU now.
