@@ -1,0 +1,76 @@
+\documentclass{article}
+% NeurIPS 2026 style (placeholder — download actual from neurips.cc)
+\usepackage[preprint]{neurips_2026}
+\usepackage{amsmath,amssymb,graphicx,booktabs,hyperref}
+
+\title{Context Distraction in Small Language Models:\\
+Why Retrieval-Augmented Generation Fails\\on Structured Code Generation Tasks}
+
+\author{
+William Chen \\
+National Taiwan University \\
+\texttt{william@ntu.edu.tw}
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We present systematic evidence that retrieval-augmented generation (RAG)
+and other context-augmentation strategies degrade the performance of small
+language models ($<$10B parameters) on structured code generation tasks.
+Through seven independent experiments on HLS pragma optimization—including
+oracle experiments with perfect retrieval and classification—we demonstrate
+that \emph{any} additional prompt context reduces pragma prediction accuracy
+by 8–30\%. We term this phenomenon \textbf{Context Distraction}: small
+models with limited attention capacity attend to surface patterns in
+augmented context rather than reasoning about the target code structure.
+Our findings are validated on 120 ForgeHLS kernels with Vitis HLS synthesis,
+10 out-of-distribution custom kernels, and cross-architecture analysis
+spanning DSP, cryptography, and image processing domains.
+The only effective intervention is post-processing constraint integration
+(+18.6\%), not pre-processing context augmentation.
+These results establish fundamental boundaries for deploying small models
+in domain-specific code generation and have implications for RAG system
+design in resource-constrained environments.
+\end{abstract}
+
+% TODO: Expand each section to 1-2 pages for 9-page total
+% Current content from paper2_context_distraction/main.tex
+% Need to add:
+% - Detailed experiment methodology
+% - Per-kernel analysis
+% - Scaling discussion
+% - Attention analysis (if feasible)
+% - Extended related work
+
+\section{Introduction}
+% Expand from current 0.5 page to 1.5 pages
+% Add: motivation, problem statement, contributions list
+
+\section{Background and Related Work}
+% Expand from current 0.3 page to 1.5 pages
+% Add: RAG theory, ICL in code generation, HLS optimization landscape
+
+\section{Methodology}
+% NEW section: describe PFS metric, post-process merge, experimental setup
+
+\section{Experiments}
+% Expand from current 1 page to 3 pages
+% 4.1: Prompt strategy comparison (10 kernels)
+% 4.2: Context length curve (5 kernels × 2 seeds)
+% 4.3: Routing + Skills (30 kernels)
+% 4.4: Oracle experiments (20 kernels)
+% 4.5: Cross-architecture analysis (120 kernels)
+
+\section{Analysis}
+% 5.1: Why does context hurt? (attention competition)
+% 5.2: Per-pragma-type breakdown
+% 5.3: Implications for RAG system design
+
+\section{Discussion and Limitations}
+% Scale dependency, domain specificity, future work
+
+\section{Conclusion}
+
+\end{document}
