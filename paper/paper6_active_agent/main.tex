@@ -180,14 +180,14 @@ suggesting a model capacity threshold.}
 500 steps, full code   & 500  & 19$\to$7.3  & 0.000 & PIPELINE OFF \\
 3 epochs, pragma-only  & 626  & 19$\to$7.6  & 0.000 & Repeats prompt \\
 \midrule
-\emph{gemma4 zero-shot} & 0   & ---         & \textbf{0.883} & Valid pragmas \\
+\emph{gemma4 zero-shot} & 0   & ---         & \textbf{0.645} & Valid pragmas \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \textbf{Finding 3}: Despite 60\% loss reduction, the 2B model
 produces no valid pragma output. Meanwhile, the 4.5B MoE model
-achieves PFS=0.883 \emph{without any fine-tuning}. This suggests
+achieves PFS=0.645 \emph{without any fine-tuning}. This suggests
 a minimum model capacity threshold for HLS pragma prediction that
 gemma-2-2b (2B dense) falls below, regardless of training data.
 
@@ -219,7 +219,7 @@ for different pragma types without explicit training.
 \subsection{Implications for AutoDSE Comparison}
 
 AutoDSE achieves near-Pareto results through 100--500 synthesis
-iterations. Our agent achieves PFS=0.883 in one shot but cannot
+iterations. Our agent achieves PFS=0.645 in one shot but cannot
 improve further. The two approaches are complementary:
 CarbonCode provides a strong warm-start, reducing AutoDSE's
 search space by eliminating clearly suboptimal configurations.

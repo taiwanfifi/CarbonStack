@@ -19,7 +19,7 @@ We compare three local language model architectures on HLS pragma
 prediction: Gemma4 (4.5B active parameters, Mixture-of-Experts),
 Qwen 2.5 Coder (7B, dense), and DeepSeek-R1 (14B, dense reasoning).
 On 5 HLS kernels with Vitis HLS synthesis validation, Gemma4 achieves
-PFS=0.883, outperforming the larger Qwen (0.633, +40\%) and DeepSeek
+PFS=0.645, outperforming the larger Qwen (0.633, +40\%) and DeepSeek
 (0.756). We hypothesize that MoE architectures benefit from expert
 specialization: different pragma types (PIPELINE, PARTITION, UNROLL)
 activate different expert pathways, enabling more precise parameter
@@ -71,7 +71,7 @@ inference per model. All models run via Ollama on RTX 4090 (24GB).
 \toprule
 & \textbf{Params} & \textbf{Type} & \textbf{PFS} & \textbf{TM\%} & \textbf{Speed} & \textbf{Fail\%} \\
 \midrule
-\textbf{Gemma4}  & 4.5B & MoE   & \textbf{0.883} & 86.7 & 10.8s & 0\% \\
+\textbf{Gemma4}  & 4.5B & MoE   & \textbf{0.645} & 86.7 & 10.8s & 0\% \\
 Qwen 2.5   & 7B   & Dense & 0.633 & 86.7 & 3.7s  & 0\% \\
 DeepSeek   & 14B  & Dense & 0.756 & 66.7 & 23.2s & 40\% \\
 \bottomrule

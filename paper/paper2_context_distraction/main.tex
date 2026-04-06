@@ -50,7 +50,7 @@ suggest hardware optimization directives---we find that:
     \item \textbf{RAG hurts}: Few-shot examples reduce accuracy from
     90.0\% to 73.4\% (Table~\ref{tab:main}).
     \item \textbf{Chaining hurts Gemma4}: Multi-step prompting drops
-    PFS from 0.883 to 0.813 for MoE models.
+    PFS from 0.883 to 0.813 for MoE models (5-kernel subset).
     \item \textbf{Multi-model fusion fails}: Combining outputs from
     multiple models performs worse than the best single model.
     \item \textbf{Zero-shot is optimal}: Simple, focused prompts
@@ -105,7 +105,7 @@ Fair comparison: same inference count per group.}
 \toprule
 \textbf{Strategy} & \textbf{Inferences} & \textbf{PFS} \\
 \midrule
-Gemma4 pass@1 (zero-shot)   & 1 & \textbf{0.883} \\
+Gemma4 pass@1 (zero-shot)   & 1 & \textbf{0.883}$^\dagger$ \\
 Gemma4 chaining              & 2 & 0.813 \\
 Qwen$\to$Gemma4 dual         & 2 & 0.697 \\
 Gemma4$\to$Qwen dual         & 2 & 0.521 \\
