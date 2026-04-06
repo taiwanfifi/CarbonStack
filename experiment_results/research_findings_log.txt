@@ -1565,3 +1565,22 @@ NEW PAPER NUMBERS:
   120 kernels, PFS=0.645 (capped), Type Match=75.7%
   OOD: 10/10 pass (no data leakage)
   95% CI: approximately [0.59, 0.70]
+
+=== Finding #59: Pragma Checker + Fine-tune Model Strategy ===
+Date: 2026-04-06
+
+Pragma Checker (core/pragma_checker.py):
+  5 rules: factor cap, PIPELINE OFF removal, partition size check,
+  unroll bound check, deduplication
+  Result: Same as factor-cap-only (PFS=0.645) on 120 kernels
+  because factor=1024 was the dominant error
+  But checker prevents future edge cases in deployment
+
+Fine-tune strategy (Gemini):
+  - 2B model is below "hardware-aware reasoning" threshold
+  - 7B is the minimum viable size
+  - Recommended: Qwen 2.5 Coder 7B with QLoRA on 24GB
+  - Add CoT format: model explains WHY before giving pragma
+  - SFT first, DPO later (need correct outputs for DPO pairs)
+  
+Next: QLoRA Qwen 7B fine-tune on ForgeHLS 3409 samples
