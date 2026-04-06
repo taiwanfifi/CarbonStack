@@ -192,6 +192,24 @@ All models run locally via Ollama on NVIDIA RTX 4090 (24GB VRAM).
 
 \begin{figure}[t]
 \centering
+\includegraphics[width=\columnwidth]{figures/pareto_frontier.png}
+\caption{Pragma optimization in Latency-LUT space. Red: baseline (worst pragma).
+Green: LLM-optimized. Arrows show optimization direction. Most kernels achieve
+significant latency reduction with moderate LUT increase.}
+\label{fig:pareto}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/pfs_120_analysis.png}
+\caption{Left: PFS distribution on 120 kernels before (red) and after (green)
+domain constraint integration. Right: per-pragma-type accuracy reveals
+PARTITION (94\%) as strength, UNROLL (56\%) as bottleneck.}
+\label{fig:pfs120}
+\end{figure}
+
+\begin{figure}[t]
+\centering
 \includegraphics[width=\columnwidth]{figures/speedup_bar.png}
 \caption{Vitis HLS synthesis speedup for 12 kernels with LLM-optimized
 pragmas vs.\ baseline (PIPELINE OFF, UNROLL=1). DCT and Bubble Sort

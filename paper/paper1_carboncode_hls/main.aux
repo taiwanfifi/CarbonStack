@@ -26,10 +26,10 @@
 \@writefile{toc}{\contentsline {section}{\numberline {IV}Experimental Setup}{2}{section.4}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {IV-A}}Benchmarks}{2}{subsection.4.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {IV-B}}Models}{2}{subsection.4.2}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Vitis HLS synthesis speedup for 12 kernels with LLM-optimized pragmas vs.\ baseline (PIPELINE OFF, UNROLL=1). DCT and Bubble Sort achieve over 50$\times $ speedup through aggressive pipelining and unrolling.}}{2}{figure.1}\protected@file@percent }
-\newlabel{fig:speedup}{{1}{2}{Vitis HLS synthesis speedup for 12 kernels with LLM-optimized pragmas vs.\ baseline (PIPELINE OFF, UNROLL=1). DCT and Bubble Sort achieve over 50$\times $ speedup through aggressive pipelining and unrolling}{figure.1}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Pragma Fidelity Score by model. Gemma4 (4.5B MoE) outperforms the 7B dense Qwen model by 40\%, suggesting MoE architectures are particularly suited for structured hardware optimization.}}{2}{figure.2}\protected@file@percent }
-\newlabel{fig:models}{{2}{2}{Pragma Fidelity Score by model. Gemma4 (4.5B MoE) outperforms the 7B dense Qwen model by 40\%, suggesting MoE architectures are particularly suited for structured hardware optimization}{figure.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Pragma optimization in Latency-LUT space. Red: baseline (worst pragma). Green: LLM-optimized. Arrows show optimization direction. Most kernels achieve significant latency reduction with moderate LUT increase.}}{2}{figure.1}\protected@file@percent }
+\newlabel{fig:pareto}{{1}{2}{Pragma optimization in Latency-LUT space. Red: baseline (worst pragma). Green: LLM-optimized. Arrows show optimization direction. Most kernels achieve significant latency reduction with moderate LUT increase}{figure.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Left: PFS distribution on 120 kernels before (red) and after (green) domain constraint integration. Right: per-pragma-type accuracy reveals PARTITION (94\%) as strength, UNROLL (56\%) as bottleneck.}}{2}{figure.2}\protected@file@percent }
+\newlabel{fig:pfs120}{{2}{2}{Left: PFS distribution on 120 kernels before (red) and after (green) domain constraint integration. Right: per-pragma-type accuracy reveals PARTITION (94\%) as strength, UNROLL (56\%) as bottleneck}{figure.2}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {IV-C}}Synthesis Tools}{2}{subsection.4.3}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {V}Results}{2}{section.5}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-A}}HLS Pragma Prediction Accuracy}{2}{subsection.5.1}\protected@file@percent }
@@ -57,8 +57,8 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-B}}When NOT to Optimize}{4}{subsection.6.2}\protected@file@percent }
 \@writefile{lot}{\contentsline {table}{\numberline {VIII}{\ignorespaces Multi-seed statistics for Gemma4 pragma prediction. 5 seeds $\times $ 5 kernels, varying temperature (0.3--0.7).}}{4}{table.8}\protected@file@percent }
 \newlabel{tab:stats}{{VIII}{4}{Multi-seed statistics for Gemma4 pragma prediction. 5 seeds $\times $ 5 kernels, varying temperature (0.3--0.7)}{table.8}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Context Distraction Effect: providing retrieval-augmented examples (A4) \emph  {degrades} both type match (90\%$\to $73\%) and PFS (0.82$\to $0.75) compared to zero-shot (A1).}}{4}{figure.3}\protected@file@percent }
-\newlabel{fig:distraction}{{3}{4}{Context Distraction Effect: providing retrieval-augmented examples (A4) \emph {degrades} both type match (90\%$\to $73\%) and PFS (0.82$\to $0.75) compared to zero-shot (A1)}{figure.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Vitis HLS synthesis speedup for 12 kernels with LLM-optimized pragmas vs.\ baseline (PIPELINE OFF, UNROLL=1). DCT and Bubble Sort achieve over 50$\times $ speedup through aggressive pipelining and unrolling.}}{4}{figure.3}\protected@file@percent }
+\newlabel{fig:speedup}{{3}{4}{Vitis HLS synthesis speedup for 12 kernels with LLM-optimized pragmas vs.\ baseline (PIPELINE OFF, UNROLL=1). DCT and Bubble Sort achieve over 50$\times $ speedup through aggressive pipelining and unrolling}{figure.3}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-C}}Comparison with Traditional DSE}{4}{subsection.6.3}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-D}}Limitations}{4}{subsection.6.4}\protected@file@percent }
 \bibstyle{IEEEtran}
@@ -69,6 +69,10 @@
 \bibcite{gpt4aigchip}{5}
 \bibcite{chipnemo}{6}
 \bibcite{phi3}{7}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Pragma Fidelity Score by model. Gemma4 (4.5B MoE) outperforms the 7B dense Qwen model by 40\%, suggesting MoE architectures are particularly suited for structured hardware optimization.}}{5}{figure.4}\protected@file@percent }
+\newlabel{fig:models}{{4}{5}{Pragma Fidelity Score by model. Gemma4 (4.5B MoE) outperforms the 7B dense Qwen model by 40\%, suggesting MoE architectures are particularly suited for structured hardware optimization}{figure.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Context Distraction Effect: providing retrieval-augmented examples (A4) \emph  {degrades} both type match (90\%$\to $73\%) and PFS (0.82$\to $0.75) compared to zero-shot (A1).}}{5}{figure.5}\protected@file@percent }
+\newlabel{fig:distraction}{{5}{5}{Context Distraction Effect: providing retrieval-augmented examples (A4) \emph {degrades} both type match (90\%$\to $73\%) and PFS (0.82$\to $0.75) compared to zero-shot (A1)}{figure.5}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {VII}Conclusion}{5}{section.7}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VII-A}}Future Work}{5}{subsection.7.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{References}{5}{section*.1}\protected@file@percent }
