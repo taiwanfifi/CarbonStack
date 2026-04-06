@@ -1708,3 +1708,33 @@ Multi-round checker (C) partially recovers from routing damage
 Implication: Don't build complex agent pipelines for small models.
 The value is in POST-PROCESSING (factor capping = +18.6%)
 not in PRE-PROCESSING (routing/skills = -18.7%).
+
+=== Finding #65: Deep IO Analysis of Routing Failure ===
+Date: 2026-04-06
+
+WHY routing hurt by -18.7%:
+1. 25/30 kernels classified as "generic" (routing accuracy = 17%)
+2. Generic skill prompt is EMPTY → routing adds context cost with zero benefit
+3. Classification step itself consumes attention → less focus on actual code
+
+SPECIFIC CASES:
+  Worst hurt: mixed_signal_processor 0.900→0.250 (classified generic, -0.650)
+  Best helped: even_parity_generator 0.000→0.600 (classified generic but skill worked)
+  Only 2 correct: semiconductor_signal_processor (+0.175, cat=dsp_filter)
+                  lfsr_32bit (+0.266, cat=crypto)
+
+MULTIROUND CHECKER effectiveness:
+  6/30 kernels recovered by checker
+  Best: multi_purpose_audio_video 0.200→0.700 (+0.500)
+  Checker works by fixing factor=1024 and adding missing PIPELINE
+
+GEMINI ANALYSIS:
+- "Routing Distraction" = classification consumes attention heads
+- "Context Fragmentation" = routing prompt dilutes kernel specification attention
+- If routing accuracy were 100%, Skills would help (see dsp_filter case)
+- But routing accuracy is 17% → net negative
+
+CONCLUSION:
+  Best pipeline: Generic prompt → LLM → Post-process (factor cap) → Done
+  NOT: Routing → Skill → LLM → Checker → Fix → Done
+  Simpler is better for small models.
