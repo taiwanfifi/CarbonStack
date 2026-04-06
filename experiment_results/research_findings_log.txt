@@ -1584,3 +1584,23 @@ Fine-tune strategy (Gemini):
   - SFT first, DPO later (need correct outputs for DPO pairs)
   
 Next: QLoRA Qwen 7B fine-tune on ForgeHLS 3409 samples
+
+=== Finding #60: 120-Kernel Deep Analysis ===
+Date: 2026-04-06
+
+Per-pragma-type accuracy (120 kernels, Gemma4):
+  PARTITION: 94% correct (best — model understands array access patterns)
+  PIPELINE:  82% correct (good — model knows when to pipeline)
+  UNROLL:    56% correct (worst — model struggles with factor selection)
+
+LLM pragma count vs Pareto:
+  Same count: 74% (model generates right NUMBER of pragmas)
+  Fewer: 24% (sometimes misses pragmas)
+  More: 2% (rarely over-generates)
+
+Implication: The model's weakness is specifically UNROLL factor selection.
+PARTITION type and PIPELINE decisions are reliable.
+This motivates targeted post-processing for UNROLL (already done: factor capping).
+
+Paper 1 updated with honest 120-kernel numbers (PFS=0.645).
+Qwen 7B QLoRA fine-tune running on GPU.
