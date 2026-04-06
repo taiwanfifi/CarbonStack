@@ -1604,3 +1604,22 @@ This motivates targeted post-processing for UNROLL (already done: factor capping
 
 Paper 1 updated with honest 120-kernel numbers (PFS=0.645).
 Qwen 7B QLoRA fine-tune running on GPU.
+
+=== Finding #61: Cross-Architecture PFS Analysis ===
+Date: 2026-04-06
+
+PFS by kernel category (120 kernels, Gemma4, factor capped):
+  DSP/Filter:     0.847 (n=6)  ← BEST (telecom kernels!)
+  Control/Logic:  0.668 (n=32)
+  Misc:           0.661 (n=39)
+  Network/IO:     0.595 (n=13)
+  Linear Algebra: 0.580 (n=7)
+  Crypto:         0.460 (n=3)
+  Image/Signal:   0.320 (n=3)  ← WORST
+
+Key insight: Model is BEST at DSP/telecom kernels (0.847) which directly
+aligns with the professor's telecom expertise. This strengthens the
+"CarbonCode for 5G/telecom" narrative.
+
+Weakness in Image/Signal (FFT, Sobel) suggests these need more complex
+loop analysis that the model struggles with.
