@@ -123,3 +123,13 @@ Median speedup (excl. regressions): **3.2x**
 | Carbon-Legacy | 3 codes | 3/3 modernized |
 | Carbon-Translate | 4 scripts | 4/4 with OpenMP |
 | Carbon-Debug | 3 bugs | 3/3 found+fixed |
+
+## Oracle Experiments (20 kernels, Gemma4)
+
+| Method | PFS | vs Baseline | Significant? |
+|--------|-----|-----------|-------------|
+| Baseline (generic) | **0.696** | — | — |
+| Oracle Routing (manual classify + skill) | 0.490 | -29.6% | **Yes (t=-2.78)** |
+| Oracle RAG (best 1-shot) | 0.614 | -11.8% | No (t=-1.14) |
+
+**Proves Context Distraction is fundamental, not implementation error.**
