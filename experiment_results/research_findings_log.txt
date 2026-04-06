@@ -1510,3 +1510,33 @@ This changes the paper story:
 - The model knows WHICH pragma types to use (75.7%) but struggles
   with EXACT parameters on diverse kernels
 - OOD generalization confirmed (2.5/3 types on unseen kernels)
+
+=== Finding #57: 120-Kernel Failure Analysis ===
+Date: 2026-04-06
+
+Key patterns from 120-kernel evaluation:
+
+1. FACTOR=1024 BUG: Model often sets UNROLL factor = array size (1024)
+   instead of reasonable value (4-16). This is the #1 cause of low PFS.
+   Fix: post-process constraint (factor must be power of 2, <=16)
+
+2. COMPLEXITY CORRELATION:
+   - Simple kernels (shift reg, comparator): PFS > 0.8
+   - Complex kernels (AES, LFSR, linked list): PFS < 0.2
+   - Model understands simple loop structures but fails on irregular access
+
+3. PFS DISTRIBUTION (103 successful kernels):
+   [0.0-0.2): 10 (10%)  — completely wrong
+   [0.2-0.4): 22 (21%)  — mostly wrong
+   [0.4-0.6): 27 (26%)  — partially correct
+   [0.6-0.8): 19 (18%)  — mostly correct  
+   [0.8-1.0): 25 (24%)  — nearly perfect
+
+4. FAILURE CASES (17/120 = 14%):
+   All are complex algorithms: AES, ChaCha20, MD5, Matrix Inversion,
+   Backpropagation, CORDIC, Sobel. Code too long for LLM to process.
+
+5. SIMPLE FIX OPPORTUNITY:
+   If we add post-processing to cap UNROLL factor at 16 and PARTITION
+   factor at array_size/4, many of the "factor=1024" failures would
+   improve. Estimated PFS improvement: +0.05-0.10.
