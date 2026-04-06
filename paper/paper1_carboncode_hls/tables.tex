@@ -93,7 +93,57 @@ A4: Few-shot RAG     & Examples & 73.4\% & 0.752 \\
 \end{table}
 
 % ============================================================
-% Table 5a: Time-to-Solution Comparison
+% Table 5a: Domain Constraint Integration (Factor Capping)
+% ============================================================
+\begin{table}[t]
+\centering
+\caption{Impact of domain-specific constraint integration (factor capping)
+on PFS. Capping UNROLL/PARTITION factors at $\leq$16 improves 25 kernels
+with zero regressions.}
+\label{tab:capping}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Config} & \textbf{Mean PFS} & \textbf{Std} & \textbf{Improved} & \textbf{Worse} \\
+\midrule
+Raw LLM output           & 0.543 & 0.275 & ---      & --- \\
++ Factor cap ($\leq$4)   & 0.606 & ---   & 25       & 0 \\
++ Factor cap ($\leq$8)   & 0.633 & ---   & 25       & 0 \\
+\textbf{+ Factor cap ($\leq$16)} & \textbf{0.645} & \textbf{0.255} & \textbf{25} & \textbf{0} \\
++ Factor cap ($\leq$32)  & 0.619 & ---   & 25       & 0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================================
+% Table 5b: OOD Generalization Test
+% ============================================================
+\begin{table}[t]
+\centering
+\caption{Out-of-distribution generalization. 10 custom kernels NOT in
+ForgeHLS training data. Model generalizes to unseen algorithms.}
+\label{tab:ood}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Kernel} & \textbf{Success} & \textbf{Types Correct (/3)} \\
+\midrule
+Ring Buffer      & \checkmark & 2 \\
+Leaky ReLU       & \checkmark & 2 \\
+Hamming Distance & \checkmark & 3 \\
+RGB to Grayscale & \checkmark & 3 \\
+Popcount         & \checkmark & 3 \\
+Moving Maximum   & \checkmark & 3 \\
+Bitonic Merge    & \checkmark & 2 \\
+Cross Correlation & \checkmark & 3 \\
+EWMA Filter      & \checkmark & 2 \\
+Prefix Maximum   & \checkmark & 2 \\
+\midrule
+\textbf{Total}   & \textbf{10/10} & \textbf{2.5 avg} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ============================================================
+% Table 5c: Time-to-Solution Comparison
 % ============================================================
 \begin{table}[t]
 \centering

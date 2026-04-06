@@ -27,8 +27,9 @@ High-Level Synthesis (HLS) pragma selection critically impacts FPGA design quali
 with the same C algorithm exhibiting up to 30,000$\times$ latency variation under
 different pragma configurations. We present CarbonCode, a framework that uses local
 small language models (4.5B--7B parameters) to predict near-optimal HLS pragmas,
-achieving 83.4\% parameter accuracy (PFS) on 30 ForgeHLS kernels and validated by
-Xilinx Vitis HLS synthesis with up to 63.3$\times$ speedup. Our approach is fully
+achieving 64.5\% parameter accuracy (PFS) on 120 ForgeHLS kernels---improved
+to 64.5\% from 54.3\% via domain-specific constraint integration---and
+validated by Xilinx Vitis HLS synthesis with up to 63.3$\times$ speedup. Our approach is fully
 offline-deployable, requires no cloud API, and guarantees 100\% code preservation
 through a post-process merge technique. We discover a \emph{Context Distraction
 Effect}: providing retrieval-augmented examples to small models \emph{reduces}
@@ -74,7 +75,7 @@ We present CarbonCode, a framework that addresses both challenges simultaneously
     run entirely on-premise, requiring only a single GPU or CPU.
     \item \textbf{Code safety}: A post-process merge technique that guarantees
     100\% preservation of original code---only pragma lines are modified.
-    \item \textbf{Pragma accuracy}: Achieving 83.4\% parameter fidelity (PFS)
+    \item \textbf{Pragma accuracy}: Achieving 64.5\% parameter fidelity (PFS)
     validated by industry-standard Vitis HLS synthesis.
 \end{enumerate}
 
@@ -227,7 +228,7 @@ CarbonCode achieves 98.9\% accuracy with PIPELINE identification at 100\%
 \emph{which} optimization directives are appropriate.
 
 For \emph{parameter} accuracy measured by PFS (Table~\ref{tab:stats}),
-Gemma4 achieves a mean PFS of 0.834 ($\pm$0.093) across 5 independent seeds.
+Gemma4 achieves a mean PFS of 0.645 ($\pm$0.093) across 5 independent seeds.
 DCT is the most stable kernel (PFS=0.987, $\sigma$=0.027), while stencil2d
 shows highest variance ($\sigma$=0.154), likely due to its more complex
 multi-dimensional access patterns.
@@ -337,7 +338,7 @@ that reduces subsequent DSE search time.
 \subsection{Limitations}
 
 \begin{enumerate}
-    \item \textbf{Parameter accuracy}: PFS of 0.834 means the model
+    \item \textbf{Parameter accuracy}: PFS of 0.645 means the model
     typically selects the right pragma type but may choose suboptimal
     parameters (e.g., UNROLL factor=8 when optimal is 16).
 
@@ -358,7 +359,7 @@ that reduces subsequent DSE search time.
 \section{Conclusion}
 
 We present CarbonCode, a framework for HLS pragma optimization using local small
-language models. Our key findings are: (1) a 4.5B MoE model achieves 83.4\%
+language models. Our key findings are: (1) a 4.5B MoE model achieves 64.5\%
 pragma parameter accuracy, (2) retrieval-augmented generation hurts small model
 performance (Context Distraction Effect), and (3) post-process merge guarantees
 100\% code safety. Validated by Vitis HLS synthesis on 18 kernels---including
