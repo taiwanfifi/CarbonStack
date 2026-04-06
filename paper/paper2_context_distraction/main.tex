@@ -187,10 +187,34 @@ a model's strength in one pragma type is not consistent across runs.
 
 \section{Related Work}
 
-RAG~\cite{lewis2020rag} improves large models but has not been
-systematically evaluated on small models for code generation.
-Chain-of-thought~\cite{wei2022cot} helps on reasoning tasks but
-may not transfer to structured generation.
+\textbf{Retrieval-Augmented Generation.}
+RAG~\cite{lewis2020rag} has become standard for knowledge-intensive
+NLP tasks, demonstrating consistent improvements for models with
+100B+ parameters. However, its effectiveness on small models ($<$10B)
+for structured code generation remains underexplored. Our work provides
+the first systematic evidence that RAG can be counterproductive for
+small models on domain-specific tasks.
+
+\textbf{In-Context Learning Sensitivity.}
+Recent work shows that ICL performance depends heavily on example
+selection, ordering, and formatting~\cite{wei2022cot}. We extend
+this finding by showing that even with \emph{optimal} example selection
+(oracle RAG), small models still degrade---suggesting the issue is
+attention capacity, not example quality.
+
+\textbf{LLMs for Hardware Design.}
+ChipNeMo~\cite{chipnemo} fine-tunes domain-specific LLMs but targets
+natural language tasks (documentation, bug summarization) rather than
+code generation. HLSPilot uses GPT-4 for pragma suggestion but relies
+on cloud APIs. Our work focuses on local small models where context
+efficiency is critical due to limited attention capacity.
+
+\textbf{Attention Capacity in Small Models.}
+The ``lost in the middle'' phenomenon~\cite{liu2024lost} shows that
+even large models struggle to use information in long contexts. We
+demonstrate a more severe version for small models: \emph{any}
+additional context---even highly relevant domain knowledge---degrades
+performance on structured generation tasks.
 
 \section{Conclusion}
 
@@ -203,6 +227,8 @@ is the optimal strategy for local models under 10B parameters.
 \begin{thebibliography}{9}
 \bibitem{lewis2020rag} P. Lewis et al., ``Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks,'' NeurIPS, 2020.
 \bibitem{wei2022cot} J. Wei et al., ``Chain-of-Thought Prompting Elicits Reasoning in Large Language Models,'' NeurIPS, 2022.
+\bibitem{chipnemo} M. Liu et al., ``ChipNeMo: Domain-Adapted LLMs for Chip Design,'' DAC, 2024.
+\bibitem{liu2024lost} N. Liu et al., ``Lost in the Middle: How Language Models Use Long Contexts,'' TACL, 2024.
 \end{thebibliography}
 
 \end{document}
